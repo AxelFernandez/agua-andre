@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: agua_db
+    environment:
+      POSTGRES_DB: agua_potable
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - agua_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agua_backend
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres123
+      DATABASE_NAME: agua_potable
+      JWT_SECRET: secret-jwt-key-change-in-production
+      PORT: 3001
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - agua_network
+    command: npm run start:dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agua_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:3001
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - agua_network
+    command: npm start
+
+volumes:
+  postgres_data:
+
+networks:
+  agua_network:
+    driver: bridge

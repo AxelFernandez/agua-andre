@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+rules:
+- "No crear, modificar ni sugerir archivos README.md bajo ninguna circunstancia."
+- "Nunca generar documentación en formato README.md. Si el usuario pide un README, pedir confirmación explícita."
+- Nunca uses alerts para el frontend, siempre crea modales bonitos y profesionales
