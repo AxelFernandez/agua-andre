@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, OneToOne,
 import { Zona } from './zona.entity';
 import { Medidor } from './medidor.entity';
 import { Boleta } from './boleta.entity';
+import { EstadoServicioEnum } from './estado-servicio.entity';
 
 export enum RolUsuario {
   CLIENTE = 'cliente',
@@ -71,6 +72,36 @@ export class Usuario {
 
   @Column({ default: true })
   activo: boolean; // Estado del cliente (activo/inactivo)
+
+  // Campos de estado del servicio
+  @Column({ 
+    type: 'enum', 
+    enum: EstadoServicioEnum,
+    default: EstadoServicioEnum.ACTIVO
+  })
+  estado_servicio: EstadoServicioEnum;
+
+  @Column({ type: 'timestamp', nullable: true })
+  fecha_aviso_deuda: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  fecha_aviso_corte: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  fecha_corte: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  fecha_ultima_reconexion: Date;
+
+  // Flags de control
+  @Column({ type: 'boolean', default: false })
+  tiene_aviso_deuda_activo: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  tiene_aviso_corte_activo: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  servicio_cortado: boolean;
 
   @OneToMany(() => Medidor, medidor => medidor.usuario)
   medidores: Medidor[]; // Historial de medidores del cliente

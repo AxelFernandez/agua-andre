@@ -1,4 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { PagosService } from './pagos.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -16,6 +19,12 @@ export class PagosController {
     return this.pagosService.findAll();
   }
 
+  @Get('pendientes-revision')
+  @Roles(RolUsuario.ADMINISTRATIVO)
+  findPendientesRevision() {
+    return this.pagosService.findPendientesRevision();
+  }
+
   @Get('boleta/:boletaId')
   findByBoleta(@Param('boletaId') boletaId: string) {
     return this.pagosService.findByBoleta(+boletaId);
@@ -28,8 +37,26 @@ export class PagosController {
 
   @Post()
   @Roles(RolUsuario.CLIENTE)
-  create(@Body() pagoData: any) {
-    return this.pagosService.create(pagoData);
+  @UseInterceptors(FileInterceptor('comprobante', {
+    storage: diskStorage({
+      destination: './uploads/comprobantes',
+      filename: (req, file, cb) => {
+        const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+        cb(null, `${randomName}${extname(file.originalname)}`);
+      }
+    })
+  }))
+  create(
+    @Body() pagoData: any,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req
+  ) {
+    return this.pagosService.create({
+      boletaId: parseInt(pagoData.boletaId),
+      monto: parseFloat(pagoData.monto),
+      comprobanteUrl: file ? file.filename : null,
+      metodoPago: 'transferencia',
+    });
   }
 
   @Put(':id/aprobar')

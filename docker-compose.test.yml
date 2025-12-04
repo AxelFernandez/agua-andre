@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: agua_db_test
+    restart: always
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-agua_potable_test}
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+      - ./init-database.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - agua_network_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agua_backend_test
+    restart: always
+    ports:
+      - "127.0.0.1:3002:3002"
+    environment:
+      NODE_ENV: development
+      DATABASE_HOST: postgres-test
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_NAME: ${DATABASE_NAME:-agua_potable_test}
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 3002
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://test.asocaguapzoga.com.ar}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./uploads-test:/app/uploads
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    networks:
+      - agua_network_test
+    command: npm run start:dev
+
+  frontend-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agua_frontend_test
+    restart: always
+    ports:
+      - "127.0.0.1:8081:3000"
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-https://api-test.asocaguapzoga.com.ar}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - agua_network_test
+    command: npm start
+
+volumes:
+  postgres_data_test:
+
+networks:
+  agua_network_test:
+    driver: bridge
+

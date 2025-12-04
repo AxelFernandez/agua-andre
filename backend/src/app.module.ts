@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ZonasModule } from './zonas/zonas.module';
@@ -10,12 +11,17 @@ import { BoletasModule } from './boletas/boletas.module';
 import { PagosModule } from './pagos/pagos.module';
 import { SeedModule } from './database/seed.module';
 import { ImportModule } from './import/import.module';
+import { TarifarioModule } from './tarifario/tarifario.module';
+import { HealthModule } from './health/health.module';
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DATABASE_HOST || 'localhost',
@@ -24,9 +30,10 @@ import { ImportModule } from './import/import.module';
       password: process.env.DATABASE_PASSWORD || 'postgres123',
       database: process.env.DATABASE_NAME || 'agua_potable',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // En producción debe ser false y usar migraciones
-      logging: true,
+      synchronize: !isProduction, // Deshabilitado en producción
+      logging: !isProduction,     // Sin logs en producción
     }),
+    HealthModule,
     AuthModule,
     UsuariosModule,
     ZonasModule,
@@ -36,6 +43,7 @@ import { ImportModule } from './import/import.module';
     PagosModule,
     SeedModule,
     ImportModule,
+    TarifarioModule,
   ],
 })
 export class AppModule {}

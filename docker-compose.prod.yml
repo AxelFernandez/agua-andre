@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  postgres-prod:
+    image: postgres:15-alpine
+    container_name: agua_db_prod
+    restart: always
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-agua_potable}
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./init-database.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - agua_network_prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend-prod:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: agua_backend_prod
+    restart: always
+    ports:
+      - "127.0.0.1:3001:3001"
+    environment:
+      NODE_ENV: production
+      DATABASE_HOST: postgres-prod
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_NAME: ${DATABASE_NAME:-agua_potable}
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://asocaguapzoga.com.ar}
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres-prod:
+        condition: service_healthy
+    networks:
+      - agua_network_prod
+
+  frontend-prod:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-https://api.asocaguapzoga.com.ar}
+    container_name: agua_frontend_prod
+    restart: always
+    ports:
+      - "127.0.0.1:8080:80"
+    networks:
+      - agua_network_prod
+
+volumes:
+  postgres_data_prod:
+
+networks:
+  agua_network_prod:
+    driver: bridge

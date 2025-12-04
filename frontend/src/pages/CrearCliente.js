@@ -141,6 +141,25 @@ function CrearCliente() {
     setLoading(true);
 
     try {
+      // 0. PRIMERO: Verificar si el número de serie ya existe
+      try {
+        const verificarRes = await axios.get(`/medidores/verificar-serie/${encodeURIComponent(formData.numeroSerie)}`);
+        if (verificarRes.data.existe) {
+          setModalConfig({
+            isOpen: true,
+            type: 'error',
+            title: 'Número de Serie Duplicado',
+            message: `Ya existe un medidor con el número de serie "${formData.numeroSerie}". Por favor, use un número de serie diferente.`,
+            onConfirm: () => setModalConfig({ ...modalConfig, isOpen: false })
+          });
+          setLoading(false);
+          return;
+        }
+      } catch (verifyError) {
+        console.log('Error al verificar serie, continuando...', verifyError);
+        // Si falla la verificación, intentamos crear de todas formas
+      }
+
       // 1. Crear el cliente
       const clientePayload = {
         nombre: formData.nombre,

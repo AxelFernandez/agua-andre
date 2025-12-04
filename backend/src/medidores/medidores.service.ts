@@ -55,6 +55,13 @@ export class MedidoresService {
     return saved as unknown as Medidor;
   }
 
+  async verificarNumeroSerieExiste(numeroSerie: string): Promise<boolean> {
+    const medidorExistente = await this.medidoresRepository.findOne({
+      where: { numeroSerie },
+    });
+    return !!medidorExistente;
+  }
+
   async asignarMedidorACliente(
     usuarioId: number, 
     medidorData: Partial<Medidor>,
@@ -68,6 +75,16 @@ export class MedidoresService {
 
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
+    }
+
+    // Verificar si el número de serie ya existe
+    if (medidorData.numeroSerie) {
+      const serieExiste = await this.verificarNumeroSerieExiste(medidorData.numeroSerie);
+      if (serieExiste) {
+        throw new BadRequestException(
+          `Ya existe un medidor con el número de serie "${medidorData.numeroSerie}". Por favor, use un número de serie diferente.`
+        );
+      }
     }
 
     // Si hay un medidor activo y se solicita dar de baja, desactivarlo

@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Zona } from '../entities/zona.entity';
 import { Usuario, RolUsuario, TipoUsuario } from '../entities/usuario.entity';
+import { TarifarioSeedService } from './tarifario-seed.service';
 
 @Injectable()
 export class SeedService implements OnModuleInit {
@@ -12,6 +13,7 @@ export class SeedService implements OnModuleInit {
     private zonasRepository: Repository<Zona>,
     @InjectRepository(Usuario)
     private usuariosRepository: Repository<Usuario>,
+    private tarifarioSeedService: TarifarioSeedService,
   ) {}
 
   async onModuleInit() {
@@ -135,6 +137,10 @@ export class SeedService implements OnModuleInit {
     console.log('   OPERARIO (sin padrón):');
     console.log('   - Email: operario@aguagandre.com');
     console.log('   - Contraseña: admin123');
+    console.log('');
+
+    // Seed del tarifario
+    await this.tarifarioSeedService.seedTarifario();
     console.log('');
   }
 }

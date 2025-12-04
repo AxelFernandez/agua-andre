@@ -11,6 +11,12 @@ import CrearCliente from './pages/CrearCliente';
 import VerCliente from './pages/VerCliente';
 import EditarCliente from './pages/EditarCliente';
 import NuevaLectura from './pages/NuevaLectura';
+import ConfiguracionTarifario from './pages/ConfiguracionTarifario';
+import EstadosServicio from './pages/EstadosServicio';
+import GenerarBoletas from './pages/GenerarBoletas';
+import ControlPagos from './pages/ControlPagos';
+import PagarBoleta from './pages/PagarBoleta';
+import ZonasAdmin from './pages/ZonasAdmin';
 
 function PrivateRoute({ children, allowedRoles }) {
   const { user } = useAuth();
@@ -39,6 +45,24 @@ function App() {
             element={
               <PrivateRoute allowedRoles={['cliente']}>
                 <DashboardCliente />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
+            path="/cliente/dashboard" 
+            element={
+              <PrivateRoute allowedRoles={['cliente']}>
+                <DashboardCliente />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
+            path="/cliente/pagar-boleta/:boletaId" 
+            element={
+              <PrivateRoute allowedRoles={['cliente']}>
+                <PagarBoleta />
               </PrivateRoute>
             } 
           />
@@ -102,6 +126,51 @@ function App() {
             element={
               <PrivateRoute allowedRoles={['administrativo', 'operario']}>
                 <NuevaLectura />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
+            path="/administrativo/tarifario" 
+            element={
+              <PrivateRoute allowedRoles={['administrativo']}>
+                <ConfiguracionTarifario />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
+            path="/administrativo/estados-servicio" 
+            element={
+              <PrivateRoute allowedRoles={['administrativo']}>
+                <EstadosServicio />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
+            path="/administrativo/generar-boletas" 
+            element={
+              <PrivateRoute allowedRoles={['administrativo']}>
+                <GenerarBoletas />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
+            path="/administrativo/control-pagos" 
+            element={
+              <PrivateRoute allowedRoles={['administrativo']}>
+                <ControlPagos />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
+            path="/administrativo/zonas" 
+            element={
+              <PrivateRoute allowedRoles={['administrativo']}>
+                <ZonasAdmin />
               </PrivateRoute>
             } 
           />

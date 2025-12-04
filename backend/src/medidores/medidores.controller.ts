@@ -31,6 +31,13 @@ export class MedidoresController {
     return this.medidoresService.findMedidorActivo(+usuarioId);
   }
 
+  @Get('verificar-serie/:numeroSerie')
+  @Roles(RolUsuario.ADMINISTRATIVO)
+  async verificarNumeroSerie(@Param('numeroSerie') numeroSerie: string) {
+    const existe = await this.medidoresService.verificarNumeroSerieExiste(numeroSerie);
+    return { existe, numeroSerie };
+  }
+
   @Post()
   @Roles(RolUsuario.ADMINISTRATIVO)
   create(@Body() medidorData: any) {

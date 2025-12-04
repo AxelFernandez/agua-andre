@@ -5,9 +5,15 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
+  // CORS dinámico según entorno
+  const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
+  const allowedOrigins = corsOrigin.split(',').map(origin => origin.trim());
+  
   app.enableCors({
-    origin: ['http://localhost:3000'],
+    origin: allowedOrigins,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   app.useGlobalPipes(new ValidationPipe({
@@ -17,7 +23,10 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`🚀 Servidor backend corriendo en puerto ${port}`);
+  
+  const env = process.env.NODE_ENV || 'development';
+  console.log(`🚀 Servidor backend corriendo en puerto ${port} [${env}]`);
+  console.log(`🌐 CORS habilitado para: ${allowedOrigins.join(', ')}`);
 }
 
 bootstrap();

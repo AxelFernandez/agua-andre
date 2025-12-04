@@ -50,7 +50,7 @@ export class LecturasService {
 
     // Obtener última lectura
     const ultimaLectura = await this.findUltimaLectura(medidor.id);
-    const lecturaAnterior = ultimaLectura ? ultimaLectura.lecturaActual : 0;
+    const lecturaAnterior = ultimaLectura ? ultimaLectura.lecturaActual : medidor.lecturaInicial;
 
     // Validar que la lectura actual sea mayor a la anterior
     if (lecturaData.lecturaActual < lecturaAnterior) {

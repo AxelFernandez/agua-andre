@@ -36,3 +36,12 @@ Thumbs.db
 # Docker
 .dockerignore
 
+# Uploads (archivos subidos por usuarios)
+uploads/
+uploads-test/
+uploads-prod/
+backend/uploads/
+
+# Environment files
+.env.prod
+.env.test

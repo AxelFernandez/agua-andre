@@ -7,12 +7,28 @@ function Sidebar() {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  const menuItems = [
-    { path: '/administrativo', icon: 'dashboard', label: 'Dashboard' },
-    { path: '/administrativo/clientes', icon: 'group', label: 'Clientes', fill: true },
-    { path: '/administrativo/facturacion', icon: 'receipt_long', label: 'Facturación' },
-    { path: '/administrativo/reportes', icon: 'bar_chart', label: 'Reportes' },
-    { path: '/administrativo/configuracion', icon: 'settings', label: 'Configuración' },
+  const menuSections = [
+    {
+      title: 'Principal',
+      items: [
+        { path: '/administrativo/clientes', icon: 'group', label: 'Clientes', fill: true },
+      ]
+    },
+    {
+      title: 'Facturación',
+      items: [
+        { path: '/administrativo/generar-boletas', icon: 'receipt_long', label: 'Generar Boletas' },
+        { path: '/administrativo/control-pagos', icon: 'fact_check', label: 'Control de Pagos', fill: true },
+        { path: '/administrativo/estados-servicio', icon: 'monitor_heart', label: 'Estados de Servicio' },
+      ]
+    },
+    {
+      title: 'Configuración',
+      items: [
+        { path: '/administrativo/tarifario', icon: 'payments', label: 'Tarifario' },
+        { path: '/administrativo/zonas', icon: 'map', label: 'Zonas' },
+      ]
+    }
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -32,22 +48,31 @@ function Sidebar() {
       </div>
 
       <div className="flex flex-col justify-between flex-1 p-4">
-        <nav className="flex flex-col gap-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                isActive(item.path)
-                  ? 'bg-primary/20 text-primary dark:bg-primary/30'
-                  : 'text-[#617c89] dark:text-gray-400 hover:bg-primary/10 hover:text-primary'
-              }`}
-            >
-              <span className={`material-symbols-outlined ${item.fill && isActive(item.path) ? 'fill' : ''}`}>
-                {item.icon}
-              </span>
-              <p className="text-sm font-medium leading-normal">{item.label}</p>
-            </button>
+        <nav className="flex flex-col gap-6">
+          {menuSections.map((section, sectionIndex) => (
+            <div key={sectionIndex}>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 px-3">
+                {section.title}
+              </p>
+              <div className="flex flex-col gap-1">
+                {section.items.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                      isActive(item.path) || location.pathname.startsWith(item.path + '/')
+                        ? 'bg-primary/20 text-primary dark:bg-primary/30'
+                        : 'text-[#617c89] dark:text-gray-400 hover:bg-primary/10 hover:text-primary'
+                    }`}
+                  >
+                    <span className={`material-symbols-outlined ${item.fill && (isActive(item.path) || location.pathname.startsWith(item.path + '/')) ? 'fill' : ''}`}>
+                      {item.icon}
+                    </span>
+                    <p className="text-sm font-medium leading-normal">{item.label}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

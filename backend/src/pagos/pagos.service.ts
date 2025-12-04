@@ -55,6 +55,13 @@ export class PagosService {
     });
 
     const saved = await this.pagosRepository.save(pago);
+    
+    // Cambiar estado de la boleta a PROCESANDO
+    await this.boletasRepository.update(
+      boleta.id,
+      { estado: EstadoBoleta.PROCESANDO }
+    );
+    
     return saved as unknown as Pago;
   }
 
@@ -83,7 +90,27 @@ export class PagosService {
     pago.observaciones = observaciones;
     
     const updated = await this.pagosRepository.save(pago);
+    
+    // Volver la boleta a estado PENDIENTE
+    await this.boletasRepository.update(
+      pago.boleta.id,
+      { estado: EstadoBoleta.PENDIENTE }
+    );
+    
     return updated;
+  }
+
+  async findPendientesRevision(): Promise<Pago[]> {
+    return this.pagosRepository.find({
+      where: { estado: EstadoPago.PENDIENTE },
+      relations: [
+        'boleta',
+        'boleta.usuario',
+        'boleta.usuario.zona',
+        'verificadoPor'
+      ],
+      order: { fechaPago: 'DESC' },
+    });
   }
 
   async delete(id: number): Promise<void> {

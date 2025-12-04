@@ -108,30 +108,23 @@ function NuevaLectura() {
         return;
       }
 
-      // Calcular consumo
-      const consumoM3 = ultimaLectura ? lecturaActual - ultimaLectura.lecturaActual : 0;
-
-      // Crear la lectura
+      // Crear la lectura - El backend calculará consumo y lecturaAnterior
       const payload = {
-        medidor: { id: cliente.medidor.id },
+        medidorId: cliente.medidor.id,
         lecturaActual,
-        lecturaAnterior: ultimaLectura?.lecturaActual || 0,
-        consumoM3,
         fechaLectura: fecha,
-        mes: new Date(fecha).getMonth() + 1,
-        anio: new Date(fecha).getFullYear(),
       };
 
-      await axios.post('/lecturas', payload);
+      const response = await axios.post('/lecturas', payload);
       
-      // Guardar datos de la lectura para mostrar en el modal
+      // Guardar datos de la lectura para mostrar en el modal (usar los datos del backend)
       setLecturaGuardada({
         cliente: cliente.nombre,
         padron: cliente.padron,
-        lecturaAnterior: ultimaLectura?.lecturaActual || cliente.medidor.lecturaInicial || 0,
-        lecturaActual,
-        consumo: consumoM3,
-        fecha: new Date(fecha).toLocaleDateString('es-AR'),
+        lecturaAnterior: response.data.lecturaAnterior,
+        lecturaActual: response.data.lecturaActual,
+        consumo: response.data.consumoM3,
+        fecha: new Date(response.data.fechaLectura).toLocaleDateString('es-AR'),
       });
       
       setShowSuccessModal(true);

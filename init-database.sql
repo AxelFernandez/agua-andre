@@ -22,12 +22,6 @@ INSERT INTO usuarios (nombre, direccion, email, padron, rol, password, "zonaId",
 ('Juan Pérez', 'Calle Principal 123', 'operario@aguagandre.com', '100-0002', 'operario', '$2b$10$YQ8P8Z4KWXhV8K8qVZq3.eY7LqZ4xKZqZ8qZ8qZ8qZ8qZ8qZ8qZ8q', 1, 1, 'residencial', NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
--- Clientes
-INSERT INTO usuarios (nombre, direccion, email, padron, rol, "zonaId", orden, tipo, whatsapp, telefono, "createdAt", "updatedAt") VALUES
-('María González', 'Av. San Martín 456', 'maria@example.com', '100-0003', 'cliente', 1, 1, 'residencial', '2613456789', '2613456789', NOW(), NOW()),
-('Pedro Rodríguez', 'Calle Belgrano 789', 'pedro@example.com', '100-0004', 'cliente', 1, 1, 'residencial', '2613456790', '2613456790', NOW(), NOW()),
-('Ana López', 'Calle Mitre 321', 'ana@example.com', '101-0001', 'cliente', 2, 1, 'comercial', '2613456791', '2613456791', NOW(), NOW())
-ON CONFLICT DO NOTHING;
 
 -- Nota: Los medidores y lecturas se pueden agregar manualmente desde el panel administrativo
 -- o usando la API una vez que el sistema esté en funcionamiento

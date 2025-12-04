@@ -25,7 +25,7 @@ export class BoletasService {
   async findByUsuario(usuarioId: number): Promise<Boleta[]> {
     return this.boletasRepository.find({
       where: { usuario: { id: usuarioId } },
-      relations: ['lectura', 'pagos'],
+      relations: ['usuario', 'usuario.zona', 'lectura', 'tarifario', 'pagos'],
       order: { fechaEmision: 'DESC' },
     });
   }
@@ -33,7 +33,7 @@ export class BoletasService {
   async findOne(id: number): Promise<Boleta> {
     const boleta = await this.boletasRepository.findOne({
       where: { id },
-      relations: ['usuario', 'lectura', 'pagos'],
+      relations: ['usuario', 'usuario.zona', 'lectura', 'tarifario', 'pagos'],
     });
     
     if (!boleta) {

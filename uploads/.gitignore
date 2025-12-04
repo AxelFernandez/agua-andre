@@ -1,0 +1,6 @@
+# Ignorar todos los archivos de comprobantes
+comprobantes/*
+
+# Pero mantener la estructura de directorios
+!comprobantes/.gitkeep
+

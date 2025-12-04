@@ -42,7 +42,7 @@ export class AuthService {
   async loginPorPadron(padron: string) {
     const usuario = await this.usuariosRepository.findOne({
       where: { padron },
-      relations: ['zona', 'medidor'],
+      relations: ['zona', 'medidores'],
     });
 
     if (!usuario) {
