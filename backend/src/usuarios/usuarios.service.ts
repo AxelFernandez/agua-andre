@@ -6,6 +6,8 @@ import { Zona } from '../entities/zona.entity';
 import * as bcrypt from 'bcrypt';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { TipoAccionAuditoria } from '../entities/auditoria-registro.entity';
+import { EstadoServicioEnum } from '../entities/estado-servicio.entity';
+import { EstadoServicioService } from '../tarifario/estado-servicio.service';
 
 @Injectable()
 export class UsuariosService {
@@ -15,6 +17,7 @@ export class UsuariosService {
     @InjectRepository(Zona)
     private zonasRepository: Repository<Zona>,
     private readonly auditoriaService: AuditoriaService,
+    private readonly estadoServicioService: EstadoServicioService,
   ) {}
 
   async findAll(): Promise<Usuario[]> {
@@ -152,6 +155,90 @@ export class UsuariosService {
     });
 
     return actualizado;
+  }
+
+  async darDeBajaServicio(id: number, observaciones?: string, actorId?: number): Promise<Usuario> {
+    const usuario = await this.findOne(id);
+    const datosPrevios = this.sanitizarObjeto({
+      activo: usuario.activo,
+      servicio_dado_de_baja: usuario.servicio_dado_de_baja,
+      estado_servicio: usuario.estado_servicio,
+    });
+
+    if (usuario.servicio_dado_de_baja) {
+      return usuario;
+    }
+
+    usuario.servicio_dado_de_baja = true;
+    usuario.activo = false;
+    usuario.fecha_baja_servicio = new Date();
+    usuario.tiene_aviso_deuda_activo = false;
+    usuario.tiene_aviso_corte_activo = false;
+
+    await this.estadoServicioService.cambiarEstadoServicio(
+      usuario,
+      EstadoServicioEnum.CORTADO,
+      false,
+      observaciones || 'Servicio dado de baja por solicitud',
+      actorId,
+    );
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'usuarios',
+      entidad: 'Usuario',
+      registroId: usuario.id,
+      accion: TipoAccionAuditoria.ACTUALIZACION,
+      descripcion: 'Baja voluntaria de servicio',
+      datosPrevios,
+      datosNuevos: this.sanitizarObjeto({
+        activo: usuario.activo,
+        servicio_dado_de_baja: usuario.servicio_dado_de_baja,
+        estado_servicio: usuario.estado_servicio,
+        fecha_baja_servicio: usuario.fecha_baja_servicio,
+      }),
+    });
+
+    return usuario;
+  }
+
+  async reactivarServicio(id: number, actorId?: number): Promise<Usuario> {
+    const usuario = await this.findOne(id);
+    const datosPrevios = this.sanitizarObjeto({
+      activo: usuario.activo,
+      servicio_dado_de_baja: usuario.servicio_dado_de_baja,
+      estado_servicio: usuario.estado_servicio,
+    });
+
+    usuario.servicio_dado_de_baja = false;
+    usuario.activo = true;
+    usuario.fecha_baja_servicio = null;
+
+    await this.estadoServicioService.cambiarEstadoServicio(
+      usuario,
+      EstadoServicioEnum.ACTIVO,
+      false,
+      'Reactivación manual del servicio',
+      actorId,
+    );
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'usuarios',
+      entidad: 'Usuario',
+      registroId: usuario.id,
+      accion: TipoAccionAuditoria.ACTUALIZACION,
+      descripcion: 'Reactivación de servicio',
+      datosPrevios,
+      datosNuevos: this.sanitizarObjeto({
+        activo: usuario.activo,
+        servicio_dado_de_baja: usuario.servicio_dado_de_baja,
+        estado_servicio: usuario.estado_servicio,
+        fecha_baja_servicio: usuario.fecha_baja_servicio,
+      }),
+    });
+
+    return usuario;
   }
 
   async delete(id: number, actorId?: number): Promise<void> {

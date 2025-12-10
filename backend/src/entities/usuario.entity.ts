@@ -91,6 +91,9 @@ export class Usuario {
   fecha_corte: Date;
 
   @Column({ type: 'timestamp', nullable: true })
+  fecha_baja_servicio: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
   fecha_ultima_reconexion: Date;
 
   // Flags de control
@@ -102,6 +105,9 @@ export class Usuario {
 
   @Column({ type: 'boolean', default: false })
   servicio_cortado: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  servicio_dado_de_baja: boolean;
 
   @OneToMany(() => Medidor, medidor => medidor.usuario)
   medidores: Medidor[]; // Historial de medidores del cliente

@@ -133,6 +133,72 @@ function VerCliente() {
     }
   };
 
+  const handleDarBajaServicio = () => {
+    setModalConfig({
+      isOpen: true,
+      type: 'warning',
+      title: 'Dar de baja el servicio',
+      message: 'No se generarán más boletas automáticas y el servicio quedará marcado como desconectado. ¿Desea continuar?',
+      onConfirm: async () => {
+        try {
+          await axios.put(`/usuarios/${id}/baja-servicio`);
+          setModalConfig({
+            isOpen: true,
+            type: 'success',
+            title: 'Servicio dado de baja',
+            message: 'El servicio fue desactivado. No se generarán nuevas boletas ni lecturas hasta reactivarlo.',
+            onConfirm: () => {
+              setModalConfig({ ...modalConfig, isOpen: false });
+              cargarDatos();
+            }
+          });
+        } catch (error) {
+          setModalConfig({
+            isOpen: true,
+            type: 'error',
+            title: 'Error al dar de baja',
+            message: error.response?.data?.message || error.message || 'No se pudo dar de baja el servicio.',
+            onConfirm: () => setModalConfig({ ...modalConfig, isOpen: false })
+          });
+        }
+      },
+      onCancel: () => setModalConfig({ ...modalConfig, isOpen: false })
+    });
+  };
+
+  const handleReactivarServicio = () => {
+    setModalConfig({
+      isOpen: true,
+      type: 'warning',
+      title: 'Reactivar servicio',
+      message: 'El servicio volverá a estar activo y podrá generar boletas nuevamente. ¿Confirmar?',
+      onConfirm: async () => {
+        try {
+          await axios.put(`/usuarios/${id}/reactivar-servicio`);
+          setModalConfig({
+            isOpen: true,
+            type: 'success',
+            title: 'Servicio reactivado',
+            message: 'El servicio fue reactivado correctamente.',
+            onConfirm: () => {
+              setModalConfig({ ...modalConfig, isOpen: false });
+              cargarDatos();
+            }
+          });
+        } catch (error) {
+          setModalConfig({
+            isOpen: true,
+            type: 'error',
+            title: 'Error al reactivar',
+            message: error.response?.data?.message || error.message || 'No se pudo reactivar el servicio.',
+            onConfirm: () => setModalConfig({ ...modalConfig, isOpen: false })
+          });
+        }
+      },
+      onCancel: () => setModalConfig({ ...modalConfig, isOpen: false })
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen">
@@ -295,10 +361,12 @@ function VerCliente() {
                         {lecturas.slice(0, 5).map((lectura) => (
                           <tr key={lectura.id}>
                             <td className="py-3 text-sm text-[#111618] dark:text-white">
-                              {new Date(lectura.fecha).toLocaleDateString()}
+                              {lectura.fechaLectura
+                                ? new Date(lectura.fechaLectura).toLocaleDateString('es-AR')
+                                : '-'}
                             </td>
                             <td className="py-3 text-sm text-right font-medium text-[#111618] dark:text-white">
-                              {lectura.valorLectura}
+                              {lectura.lecturaActual}
                             </td>
                             <td className="py-3 text-sm text-right font-bold text-primary">
                               {lectura.consumoM3 || '-'}
@@ -317,7 +385,18 @@ function VerCliente() {
               {/* Estado */}
               <div className="bg-white dark:bg-background-dark dark:border dark:border-gray-700 rounded-xl shadow-sm p-6">
                 <h3 className="text-sm font-medium text-[#617c89] dark:text-gray-400 mb-2">Estado</h3>
-                {cliente.activo !== false ? (
+                {cliente.servicio_dado_de_baja ? (
+                  <div className="space-y-1">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                      Servicio dado de baja
+                    </span>
+                    {cliente.fecha_baja_servicio && (
+                      <p className="text-xs text-[#617c89] dark:text-gray-400">
+                        Desde: {new Date(cliente.fecha_baja_servicio).toLocaleDateString('es-AR')}
+                      </p>
+                    )}
+                  </div>
+                ) : cliente.activo !== false ? (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-active-green/10 text-active-green">
                     Activo
                   </span>
@@ -362,7 +441,7 @@ function VerCliente() {
                     <span className="material-symbols-outlined text-primary">receipt</span>
                     <span className="text-sm font-medium text-[#111618] dark:text-white">Ver Boletas</span>
                   </button>
-                  {cliente.medidor && (
+                  {cliente.medidor && !cliente.servicio_dado_de_baja && (
                     <button
                       onClick={() => navigate(`/administrativo/clientes/${id}/nueva-lectura`)}
                       className="w-full flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
@@ -371,7 +450,7 @@ function VerCliente() {
                       <span className="text-sm font-medium">Nueva Lectura</span>
                     </button>
                   )}
-                  {cliente.medidor ? (
+                  {!cliente.servicio_dado_de_baja && (cliente.medidor ? (
                     <button
                       onClick={() => setShowModalMedidorRoto(true)}
                       className="w-full flex items-center gap-3 px-4 py-3 bg-error/10 text-error border border-error/20 rounded-lg hover:bg-error/20 transition-colors"
@@ -386,6 +465,23 @@ function VerCliente() {
                     >
                       <span className="material-symbols-outlined">add_circle</span>
                       <span className="text-sm font-medium">Asignar Medidor</span>
+                    </button>
+                  ))}
+                  {cliente.servicio_dado_de_baja ? (
+                    <button
+                      onClick={handleReactivarServicio}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <span className="material-symbols-outlined">power_settings_new</span>
+                      <span className="text-sm font-medium">Reactivar servicio</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleDarBajaServicio}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-error/10 text-error border border-error/20 rounded-lg hover:bg-error/20 transition-colors"
+                    >
+                      <span className="material-symbols-outlined">link_off</span>
+                      <span className="text-sm font-medium">Dar de baja servicio</span>
                     </button>
                   )}
                   <button className="w-full flex items-center gap-3 px-4 py-3 bg-[#f0f3f4] dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">

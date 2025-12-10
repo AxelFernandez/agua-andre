@@ -30,6 +30,16 @@ const GenerarBoletas = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mes, anio, activeTab]);
 
+  useEffect(() => {
+    if (!clienteSeleccionado) return;
+    const clienteValido = clientes.some(
+      c => c.id === parseInt(clienteSeleccionado) && c.activo !== false && !c.servicio_dado_de_baja
+    );
+    if (!clienteValido) {
+      setClienteSeleccionado('');
+    }
+  }, [clientes, clienteSeleccionado]);
+
   const cargarClientes = async () => {
     try {
       const response = await axios.get('/usuarios');
@@ -120,7 +130,7 @@ TOTAL: $${boleta.total?.toLocaleString('es-AR')}`,
       isOpen: true,
       type: 'warning',
       title: 'Generación Masiva',
-      message: `¿Desea generar boletas para TODOS los clientes activos para el período ${meses.find(m => m.value === parseInt(mes))?.label} ${anio}?\n\nEsto puede tomar unos segundos.`,
+      message: `¿Desea generar boletas para todos los clientes activos y sin baja de servicio para el período ${meses.find(m => m.value === parseInt(mes))?.label} ${anio}?\n\nEsto puede tomar unos segundos.`,
       confirmText: 'Generar Todas',
       onConfirm: async () => {
         setModal({ ...modal, isOpen: false });
@@ -321,6 +331,7 @@ Use "Recalcular" cuando:
   ];
 
   const anios = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 1 + i);
+  const clientesDisponibles = clientes.filter(c => c.activo !== false && !c.servicio_dado_de_baja);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -399,7 +410,7 @@ Use "Recalcular" cuando:
                       disabled={loading}
                     >
                       <option value="">Seleccione un cliente</option>
-                      {clientes.map((cliente) => (
+                    {clientesDisponibles.map((cliente) => (
                         <option key={cliente.id} value={cliente.id}>
                           {cliente.padron} - {cliente.nombre}
                         </option>
@@ -452,10 +463,10 @@ Use "Recalcular" cuando:
                       <h4 className="font-medium text-gray-900 mb-2">Resumen</h4>
                       <div className="space-y-1 text-sm text-gray-700">
                         <p>Cliente: <span className="font-semibold">
-                          {clientes.find(c => c.id === parseInt(clienteSeleccionado))?.nombre}
+                          {clientesDisponibles.find(c => c.id === parseInt(clienteSeleccionado))?.nombre}
                         </span></p>
                         <p>Padrón: <span className="font-semibold">
-                          {clientes.find(c => c.id === parseInt(clienteSeleccionado))?.padron}
+                          {clientesDisponibles.find(c => c.id === parseInt(clienteSeleccionado))?.padron}
                         </span></p>
                         <p>Período: <span className="font-semibold">
                           {meses.find(m => m.value === parseInt(mes))?.label} {anio}

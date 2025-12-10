@@ -110,6 +110,10 @@ export class EstadisticasService {
       where: { rol: RolUsuario.CLIENTE },
     });
 
+    const clientesBajaServicio = await this.usuariosRepository.count({
+      where: { rol: RolUsuario.CLIENTE, servicio_dado_de_baja: true },
+    });
+
     const clientesConMedidorRaw = await this.medidoresRepository
       .createQueryBuilder('medidor')
       .select('COUNT(DISTINCT medidor.usuario)', 'total')
@@ -147,6 +151,7 @@ export class EstadisticasService {
       .select('usuario.estado_servicio', 'estado')
       .addSelect('COUNT(*)', 'cantidad')
       .where('usuario.rol = :rol', { rol: RolUsuario.CLIENTE })
+      .andWhere('usuario.servicio_dado_de_baja = false')
       .groupBy('usuario.estado_servicio')
       .getRawMany<{ estado: EstadoServicioEnum; cantidad: string }>();
 
@@ -259,6 +264,7 @@ export class EstadisticasService {
       usuarios: {
         totalClientes,
         estadosServicio,
+        bajasServicio: clientesBajaServicio,
       },
       boletas: {
         porEstado: boletasPorEstado,

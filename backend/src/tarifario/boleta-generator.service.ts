@@ -93,6 +93,14 @@ export class BoletaGeneratorService {
       throw new Error('Usuario no encontrado');
     }
 
+    if (usuario.servicio_dado_de_baja) {
+      throw new Error('El servicio del usuario está dado de baja. No se generan boletas.');
+    }
+
+    if (!usuario.activo) {
+      throw new Error('El usuario está inactivo. No se generan boletas.');
+    }
+
     const tarifario = await this.tarifarioService.obtenerTarifarioActivo();
     if (!tarifario) {
       throw new Error('No hay tarifario activo configurado');
@@ -301,6 +309,7 @@ export class BoletaGeneratorService {
       where: {
         rol: RolUsuario.CLIENTE,
         activo: true,
+        servicio_dado_de_baja: false,
       },
       relations: ['zona', 'medidores'],
     });

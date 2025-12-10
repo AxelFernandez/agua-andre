@@ -119,7 +119,16 @@ const EstadosServicio = () => {
     }
   };
 
-  const getEstadoBadge = (estadoServicio) => {
+  const getEstadoBadge = (cliente) => {
+    if (cliente.servicio_dado_de_baja) {
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+          <span className="material-symbols-outlined text-sm">link_off</span>
+          Baja de servicio
+        </span>
+      );
+    }
+
     const estados = {
       'ACTIVO': { bg: 'bg-green-100', text: 'text-green-800', icon: 'check_circle', label: 'Activo' },
       'AVISO_DEUDA': { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: 'warning', label: 'Aviso de Deuda' },
@@ -127,7 +136,7 @@ const EstadosServicio = () => {
       'CORTADO': { bg: 'bg-red-100', text: 'text-red-800', icon: 'power_off', label: 'Cortado' },
     };
     
-    const estado = estados[estadoServicio] || estados['ACTIVO'];
+    const estado = estados[cliente.estado_servicio] || estados['ACTIVO'];
     
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${estado.bg} ${estado.text}`}>
@@ -139,16 +148,23 @@ const EstadosServicio = () => {
 
   const getEstadisticas = () => {
     return {
-      activos: clientes.filter(c => c.estado_servicio === 'ACTIVO').length,
-      avisoDeuda: clientes.filter(c => c.estado_servicio === 'AVISO_DEUDA').length,
-      avisoCorte: clientes.filter(c => c.estado_servicio === 'AVISO_CORTE').length,
-      cortados: clientes.filter(c => c.estado_servicio === 'CORTADO').length,
+      activos: clientes.filter(c => !c.servicio_dado_de_baja && c.estado_servicio === 'ACTIVO').length,
+      avisoDeuda: clientes.filter(c => !c.servicio_dado_de_baja && c.estado_servicio === 'AVISO_DEUDA').length,
+      avisoCorte: clientes.filter(c => !c.servicio_dado_de_baja && c.estado_servicio === 'AVISO_CORTE').length,
+      cortados: clientes.filter(c => !c.servicio_dado_de_baja && c.estado_servicio === 'CORTADO').length,
+      bajas: clientes.filter(c => c.servicio_dado_de_baja).length,
     };
   };
 
   const clientesFiltrados = clientes.filter(cliente => {
-    const matchEstado = filtroEstado === 'TODOS' || cliente.estado_servicio === filtroEstado;
-    const matchSearch = 
+    const matchEstado =
+      filtroEstado === 'TODOS'
+        ? true
+        : filtroEstado === 'BAJA'
+          ? cliente.servicio_dado_de_baja
+          : !cliente.servicio_dado_de_baja && cliente.estado_servicio === filtroEstado;
+
+    const matchSearch =
       cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cliente.padron?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchEstado && matchSearch;
@@ -196,7 +212,7 @@ const EstadosServicio = () => {
 
         {/* Estadísticas */}
         <div className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
             <div className="bg-white rounded-lg border p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -236,6 +252,16 @@ const EstadosServicio = () => {
                 <span className="material-symbols-outlined text-4xl text-red-600">power_off</span>
               </div>
             </div>
+
+            <div className="bg-white rounded-lg border p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Bajas servicio</p>
+                  <p className="text-3xl font-bold text-gray-700 mt-2">{stats.bajas}</p>
+                </div>
+                <span className="material-symbols-outlined text-4xl text-gray-600">link_off</span>
+              </div>
+            </div>
           </div>
 
           {/* Filtros */}
@@ -266,6 +292,7 @@ const EstadosServicio = () => {
                 <option value="AVISO_DEUDA">Aviso de Deuda</option>
                 <option value="AVISO_CORTE">Aviso de Corte</option>
                 <option value="CORTADO">Cortados</option>
+                <option value="BAJA">Baja de servicio</option>
               </select>
             </div>
           </div>
@@ -301,7 +328,7 @@ const EstadosServicio = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getEstadoBadge(cliente.estado_servicio)}
+                      {getEstadoBadge(cliente)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
@@ -333,7 +360,7 @@ const EstadosServicio = () => {
                         >
                           Ver Detalle
                         </button>
-                        {cliente.estado_servicio === 'CORTADO' && (
+                        {cliente.estado_servicio === 'CORTADO' && !cliente.servicio_dado_de_baja && (
                           <button
                             onClick={() => handleReconexion(cliente)}
                             className="text-green-600 hover:text-green-800 font-medium"

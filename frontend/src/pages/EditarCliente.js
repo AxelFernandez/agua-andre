@@ -14,6 +14,7 @@ function EditarCliente() {
   const [zonas, setZonas] = useState([]);
   const [medidores, setMedidores] = useState([]);
   const [historialMedidores, setHistorialMedidores] = useState([]);
+  const [servicioBaja, setServicioBaja] = useState(false);
   const [showModalMedidorRoto, setShowModalMedidorRoto] = useState(false);
   const [showModalAsignarMedidor, setShowModalAsignarMedidor] = useState(false);
   const [nuevoMedidor, setNuevoMedidor] = useState({
@@ -56,6 +57,7 @@ function EditarCliente() {
       ]);
 
       const cliente = clienteRes.data;
+      setServicioBaja(cliente.servicio_dado_de_baja || false);
       setFormData({
         nombre: cliente.nombre || '',
         email: cliente.email || '',
@@ -250,6 +252,20 @@ function EditarCliente() {
             </div>
           </div>
 
+          {servicioBaja && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined">info</span>
+                <div>
+                  <p className="font-semibold">Servicio dado de baja</p>
+                  <p className="text-sm text-red-700 dark:text-red-200/80">
+                    Este cliente tiene el servicio desactivado. No se generarán boletas hasta reactivarlo.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Formulario */}
           <form onSubmit={handleSubmit} className="max-w-5xl">
             <div className="bg-white dark:bg-background-dark dark:border dark:border-gray-700 rounded-xl shadow-sm p-6 mb-6">
@@ -325,11 +341,17 @@ function EditarCliente() {
                     name="activo"
                     value={formData.activo}
                     onChange={(e) => setFormData({...formData, activo: e.target.value === 'true'})}
+                    disabled={servicioBaja}
                     className="w-full h-12 px-4 rounded-lg bg-[#f0f3f4] dark:bg-gray-700 border-none text-[#111618] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="true">Activo</option>
                     <option value="false">Inactivo</option>
                   </select>
+                  {servicioBaja && (
+                    <p className="text-xs text-[#617c89] dark:text-gray-400 mt-1">
+                      El estado se mantiene en baja hasta reactivarlo desde la vista del cliente.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

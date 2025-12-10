@@ -26,7 +26,7 @@ export class EstadoServicioService {
   async verificarYActualizarEstados(): Promise<void> {
     const config = await this.tarifarioService.obtenerConfiguracionAvisos();
     const clientes = await this.usuarioRepository.find({
-      where: { rol: RolUsuario.CLIENTE, activo: true },
+      where: { rol: RolUsuario.CLIENTE, activo: true, servicio_dado_de_baja: false },
     });
 
     for (const cliente of clientes) {

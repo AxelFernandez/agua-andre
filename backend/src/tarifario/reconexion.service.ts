@@ -42,6 +42,10 @@ export class ReconexionService {
       throw new Error('Usuario no encontrado');
     }
 
+    if (cliente.servicio_dado_de_baja) {
+      throw new Error('El servicio está dado de baja. Reactívelo antes de reconectar.');
+    }
+
     if (cliente.estado_servicio !== EstadoServicioEnum.CORTADO) {
       throw new Error('El servicio no está cortado');
     }

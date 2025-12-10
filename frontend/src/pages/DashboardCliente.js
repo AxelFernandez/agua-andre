@@ -37,36 +37,30 @@ function DashboardCliente() {
         .filter(b => b.estado === 'pendiente' || b.estado === 'procesando')
         .reduce((sum, b) => sum + parseFloat(b.total || 0), 0);
 
-      // Cargar lecturas si tiene medidor
-      let consumoActual = 0;
-      if (user.medidores && user.medidores.length > 0) {
-        const medidorActivo = user.medidores.find(m => m.activo);
-        if (medidorActivo) {
-          try {
-            const lecturasRes = await axios.get(`${API_URL}/lecturas?medidorId=${medidorActivo.id}`);
-            if (lecturasRes.data && lecturasRes.data.length > 0) {
-              const lecturasOrdenadas = lecturasRes.data.sort((a, b) => 
-                new Date(b.fechaLectura) - new Date(a.fechaLectura)
-              );
-              const lecturasParaGrafico = lecturasOrdenadas.slice(0, 6).reverse();
-              console.log('Lecturas para gráfico:', lecturasParaGrafico);
-              setLecturas(lecturasParaGrafico);
-              
-              // Usar el consumo de la última lectura
-              if (lecturasOrdenadas.length > 0) {
-                consumoActual = parseFloat(lecturasOrdenadas[0].consumoM3) || 0;
-              }
-            }
-          } catch (err) {
-            console.log('No se pudieron cargar lecturas:', err);
-          }
-        }
-      }
+      // Construir historial de consumo a partir de boletas (los clientes no pueden consultar /lecturas)
+      const lecturasDesdeBoletas = boletasOrdenadas.map(b => {
+        const consumo = parseFloat(
+          b.consumo_m3 ?? b?.lectura?.consumoM3 ?? 0
+        ) || 0;
+        return {
+          mes: b.mes,
+          anio: b.anio,
+          consumoM3: consumo,
+        };
+      });
 
-      // Si no hay lecturas pero hay boletas, usar el consumo de la boleta más reciente
-      if (consumoActual === 0 && boletasOrdenadas.length > 0) {
-        consumoActual = parseFloat(boletasOrdenadas[0].consumo_m3) || 0;
-      }
+      // Ordenar cronológicamente y tomar las 6 últimas para mostrar izquierda→derecha
+      const lecturasOrdenadasAsc = lecturasDesdeBoletas.sort((a, b) => {
+        if (a.anio !== b.anio) return a.anio - b.anio;
+        return a.mes - b.mes;
+      });
+      const lecturasParaGrafico = lecturasOrdenadasAsc.slice(-6);
+      setLecturas(lecturasParaGrafico);
+
+      // Usar el consumo del período más reciente disponible
+      const consumoActual = lecturasParaGrafico.length > 0 
+        ? lecturasParaGrafico[lecturasParaGrafico.length - 1].consumoM3 
+        : 0;
 
       // Actualizar stats
       setStats({
@@ -301,14 +295,14 @@ function DashboardCliente() {
               
               {/* Chart */}
               {lecturas.length > 0 ? (
-                <div className="grid min-h-[220px] grid-flow-col gap-4 grid-rows-[1fr_auto] items-end justify-items-center px-3 pt-4">
+                <div className="flex items-end justify-around gap-2 min-h-[220px] px-3 pt-4 pb-2">
                   {lecturas.map((lectura, index) => {
                     const altura = calcularAltura(lectura.consumoM3);
                     const consumo = parseFloat(lectura.consumoM3) || 0;
                     return (
-                      <div key={index} className="flex flex-col items-center w-full h-full justify-end group relative">
+                      <div key={index} className="flex flex-col items-center flex-1 h-full justify-end group relative">
                         {/* Tooltip con consumo */}
-                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
                           {consumo.toFixed(2)} m³
                         </div>
                         <div 
@@ -326,7 +320,7 @@ function DashboardCliente() {
                           index === lecturas.length - 1 
                             ? 'text-[#007BFF] font-bold' 
                             : 'text-[#617c89] dark:text-gray-400'
-                        } text-xs leading-normal tracking-[0.015em] pt-2`}>
+                        } text-xs leading-normal tracking-[0.015em] pt-2 whitespace-nowrap`}>
                           {formatearMes(lectura.mes)}
                         </p>
                       </div>

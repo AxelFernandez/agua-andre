@@ -71,6 +71,8 @@ function ClientesAdmin() {
         filtered = filtered.filter((c) => c.activo !== false);
       } else if (estadoFilter === 'inactivo') {
         filtered = filtered.filter((c) => c.activo === false);
+      } else if (estadoFilter === 'baja') {
+        filtered = filtered.filter((c) => c.servicio_dado_de_baja);
       }
       // Para 'con-deuda' necesitarías agregar lógica de boletas pendientes
     }
@@ -85,7 +87,25 @@ function ClientesAdmin() {
     // Puedes modificar esta lógica según tus necesidades
     
     let estado = 'activo';
+    let badgeClasses = {
+      'activo': 'bg-active-green/10 text-active-green',
+      'con-deuda': 'bg-debt-red/10 text-debt-red',
+      'inactivo': 'bg-inactive-gray/10 text-inactive-gray',
+      'baja': 'bg-red-100 text-red-700',
+    };
+
+    const labels = {
+      'activo': 'Activo',
+      'con-deuda': 'Con Deuda',
+      'inactivo': 'Inactivo',
+      'baja': 'Baja servicio',
+    };
     
+    if (cliente.servicio_dado_de_baja) {
+      estado = 'baja';
+      return { class: badgeClasses[estado], label: labels[estado] };
+    }
+
     // Si el cliente tiene campo activo en false, es inactivo
     if (cliente.activo === false) {
       estado = 'inactivo';
@@ -95,18 +115,6 @@ function ClientesAdmin() {
     //   estado = 'con-deuda';
     // }
     
-    const badgeClasses = {
-      'activo': 'bg-active-green/10 text-active-green',
-      'con-deuda': 'bg-debt-red/10 text-debt-red',
-      'inactivo': 'bg-inactive-gray/10 text-inactive-gray',
-    };
-
-    const labels = {
-      'activo': 'Activo',
-      'con-deuda': 'Con Deuda',
-      'inactivo': 'Inactivo',
-    };
-
     return { class: badgeClasses[estado], label: labels[estado] };
   };
 
@@ -180,6 +188,7 @@ function ClientesAdmin() {
                   <option value="activo">Activo</option>
                   <option value="con-deuda">Con Deuda</option>
                   <option value="inactivo">Inactivo</option>
+                  <option value="baja">Baja servicio</option>
                 </select>
               </div>
             </div>

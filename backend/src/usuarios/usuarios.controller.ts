@@ -44,6 +44,22 @@ export class UsuariosController {
     return this.usuariosService.update(+id, usuarioData, req.user.userId);
   }
 
+  @Put(':id/baja-servicio')
+  @Roles(RolUsuario.ADMINISTRATIVO)
+  darBajaServicio(
+    @Param('id') id: string,
+    @Body() body: { observaciones?: string },
+    @Request() req,
+  ) {
+    return this.usuariosService.darDeBajaServicio(+id, body?.observaciones, req.user.userId);
+  }
+
+  @Put(':id/reactivar-servicio')
+  @Roles(RolUsuario.ADMINISTRATIVO)
+  reactivarServicio(@Param('id') id: string, @Request() req) {
+    return this.usuariosService.reactivarServicio(+id, req.user.userId);
+  }
+
   @Delete(':id')
   @Roles(RolUsuario.ADMINISTRATIVO)
   delete(@Param('id') id: string, @Request() req) {

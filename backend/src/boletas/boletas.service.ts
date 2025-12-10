@@ -58,6 +58,14 @@ export class BoletasService {
     }
 
     const usuario = lectura.medidor.usuario;
+
+    if (usuario.servicio_dado_de_baja) {
+      throw new NotFoundException('El servicio del usuario está dado de baja. No se pueden generar boletas.');
+    }
+
+    if (usuario.activo === false) {
+      throw new NotFoundException('El usuario está inactivo. No se pueden generar boletas.');
+    }
     
     // Cálculo simple del monto (puede ser más complejo según tarifas)
     const montoBase = tarifaBase + (lectura.consumoM3 * 50); // $50 por m3
