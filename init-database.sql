@@ -9,7 +9,7 @@ INSERT INTO zonas (nombre, valor, descripcion, "createdAt", "updatedAt") VALUES
 ('San Miguel / Puerto', 400, 'Operario: Villegas Aldo / Lucero Ramon', NOW(), NOW()),
 ('Retamo / Forzudo', 500, 'Operario: Zalaba Juan / Soria Jose', NOW(), NOW()),
 ('San Jose', 600, 'Operario: Gonzalez Edgar', NOW(), NOW()),
-('Lagunas Del Rosario', 700, 'Operario: Zalazar Juan', NOW(), NOW()),
+('Lagunas Del Rosario', 700, 'Operario: Zalazar Juan', NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- Insertar Usuarios de prueba
