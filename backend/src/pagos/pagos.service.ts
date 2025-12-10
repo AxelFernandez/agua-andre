@@ -1,8 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Pago, EstadoPago } from '../entities/pago.entity';
+import { Pago, EstadoPago, MetodoPago } from '../entities/pago.entity';
 import { Boleta, EstadoBoleta } from '../entities/boleta.entity';
+import { PagoBoletaService } from '../tarifario/pago-boleta.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
+import { TipoAccionAuditoria } from '../entities/auditoria-registro.entity';
 
 @Injectable()
 export class PagosService {
@@ -11,6 +14,8 @@ export class PagosService {
     private pagosRepository: Repository<Pago>,
     @InjectRepository(Boleta)
     private boletasRepository: Repository<Boleta>,
+    private readonly pagoBoletaService: PagoBoletaService,
+    private readonly auditoriaService: AuditoriaService,
   ) {}
 
   async findAll(): Promise<Pago[]> {
@@ -65,9 +70,96 @@ export class PagosService {
     return saved as unknown as Pago;
   }
 
+  async registrarPagoEfectivo(
+    data: {
+      boletaId: number;
+      monto?: number;
+      fechaPago?: string | Date;
+      observaciones?: string;
+    },
+    adminId: number,
+  ): Promise<Pago> {
+    const boleta = await this.boletasRepository.findOne({
+      where: { id: data.boletaId },
+      relations: ['usuario'],
+    });
+
+    if (!boleta) {
+      throw new NotFoundException('Boleta no encontrada');
+    }
+
+    if (boleta.estado === EstadoBoleta.PAGADA) {
+      throw new BadRequestException('Esta boleta ya está marcada como pagada');
+    }
+
+    const fechaPago =
+      data.fechaPago instanceof Date
+        ? data.fechaPago
+        : data.fechaPago
+          ? new Date(data.fechaPago)
+          : new Date();
+
+    const montoPagado = Number(
+      typeof data.monto === 'undefined' ? boleta.total : data.monto,
+    );
+
+    const datosPrevios = {
+      estadoBoleta: boleta.estado,
+      totalBoleta: boleta.total,
+      fechaPago: boleta.fechaPago,
+    };
+
+    await this.pagoBoletaService.procesarPagoBoleta(boleta.id, montoPagado, fechaPago);
+
+    const boletaActualizada = await this.boletasRepository.findOne({
+      where: { id: boleta.id },
+      relations: ['usuario'],
+    });
+
+    const pago = this.pagosRepository.create({
+      boleta,
+      monto: montoPagado,
+      fechaPago,
+      metodoPago: MetodoPago.EFECTIVO,
+      estado: EstadoPago.APROBADO,
+      verificadoPor: adminId ? ({ id: adminId } as any) : null,
+      observaciones: data.observaciones,
+    });
+
+    const pagoGuardado = await this.pagosRepository.save(pago);
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: adminId,
+      modulo: 'pagos',
+      entidad: 'Pago',
+      registroId: pagoGuardado.id,
+      accion: TipoAccionAuditoria.CREACION,
+      descripcion: 'Cobro en efectivo registrado en caja',
+      datosPrevios: this.sanitizarObjeto(datosPrevios),
+      datosNuevos: this.sanitizarObjeto({
+        boletaId: boletaActualizada?.id ?? boleta.id,
+        monto: montoPagado,
+        fechaPago,
+        metodoPago: MetodoPago.EFECTIVO,
+        estado: EstadoPago.APROBADO,
+      }),
+      metadata: this.sanitizarObjeto({
+        usuarioId: boletaActualizada?.usuario?.id,
+        estadoBoleta: boletaActualizada?.estado ?? EstadoBoleta.PAGADA,
+      }),
+    });
+
+    return pagoGuardado;
+  }
+
   async aprobarPago(id: number, adminId: number): Promise<Pago> {
     const pago = await this.findOne(id);
-    
+    const previos = this.sanitizarObjeto({
+      estado: pago.estado,
+      verificadoPor: pago.verificadoPor?.id,
+      boletaEstado: pago.boleta?.estado,
+    });
+
     pago.estado = EstadoPago.APROBADO;
     pago.verificadoPor = { id: adminId } as any;
     
@@ -78,13 +170,38 @@ export class PagosService {
       pago.boleta.id,
       { estado: EstadoBoleta.PAGADA }
     );
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: adminId,
+      modulo: 'pagos',
+      entidad: 'Pago',
+      registroId: pagoActualizado.id,
+      accion: TipoAccionAuditoria.ACTUALIZACION,
+      descripcion: 'Pago por transferencia aprobado',
+      datosPrevios: previos,
+      datosNuevos: this.sanitizarObjeto({
+        estado: pagoActualizado.estado,
+        verificadoPor: adminId,
+        boletaId: pago.boleta.id,
+        boletaEstado: EstadoBoleta.PAGADA,
+      }),
+      metadata: this.sanitizarObjeto({
+        usuarioId: pago.boleta?.usuario?.id,
+      }),
+    });
     
     return pagoActualizado;
   }
 
   async rechazarPago(id: number, adminId: number, observaciones: string): Promise<Pago> {
     const pago = await this.findOne(id);
-    
+    const previos = this.sanitizarObjeto({
+      estado: pago.estado,
+      verificadoPor: pago.verificadoPor?.id,
+      observaciones: pago.observaciones,
+      boletaEstado: pago.boleta?.estado,
+    });
+
     pago.estado = EstadoPago.RECHAZADO;
     pago.verificadoPor = { id: adminId } as any;
     pago.observaciones = observaciones;
@@ -96,6 +213,26 @@ export class PagosService {
       pago.boleta.id,
       { estado: EstadoBoleta.PENDIENTE }
     );
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: adminId,
+      modulo: 'pagos',
+      entidad: 'Pago',
+      registroId: updated.id,
+      accion: TipoAccionAuditoria.ACTUALIZACION,
+      descripcion: 'Pago por transferencia rechazado',
+      datosPrevios: previos,
+      datosNuevos: this.sanitizarObjeto({
+        estado: updated.estado,
+        verificadoPor: adminId,
+        observaciones,
+        boletaId: pago.boleta.id,
+        boletaEstado: EstadoBoleta.PENDIENTE,
+      }),
+      metadata: this.sanitizarObjeto({
+        usuarioId: pago.boleta?.usuario?.id,
+      }),
+    });
     
     return updated;
   }
@@ -116,6 +253,24 @@ export class PagosService {
   async delete(id: number): Promise<void> {
     const pago = await this.findOne(id);
     await this.pagosRepository.remove(pago);
+  }
+
+  private sanitizarObjeto(
+    data: Record<string, any> | null | undefined,
+  ): Record<string, any> | null {
+    if (!data) {
+      return null;
+    }
+
+    const limpio = Object.entries(data).reduce((acc, [key, value]) => {
+      if (typeof value === 'undefined') {
+        return acc;
+      }
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.keys(limpio).length ? limpio : null;
   }
 }
 

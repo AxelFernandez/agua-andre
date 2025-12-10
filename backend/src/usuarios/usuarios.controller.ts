@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -28,26 +28,26 @@ export class UsuariosController {
 
   @Post()
   @Roles(RolUsuario.ADMINISTRATIVO)
-  create(@Body() usuarioData: any) {
-    return this.usuariosService.create(usuarioData);
+  create(@Body() usuarioData: any, @Request() req) {
+    return this.usuariosService.create(usuarioData, req.user.userId);
   }
 
   @Post('importar')
   @Roles(RolUsuario.ADMINISTRATIVO)
-  importar(@Body() usuarios: any[]) {
-    return this.usuariosService.importarUsuarios(usuarios);
+  importar(@Body() usuarios: any[], @Request() req) {
+    return this.usuariosService.importarUsuarios(usuarios, req.user.userId);
   }
 
   @Put(':id')
   @Roles(RolUsuario.ADMINISTRATIVO)
-  update(@Param('id') id: string, @Body() usuarioData: any) {
-    return this.usuariosService.update(+id, usuarioData);
+  update(@Param('id') id: string, @Body() usuarioData: any, @Request() req) {
+    return this.usuariosService.update(+id, usuarioData, req.user.userId);
   }
 
   @Delete(':id')
   @Roles(RolUsuario.ADMINISTRATIVO)
-  delete(@Param('id') id: string) {
-    return this.usuariosService.delete(+id);
+  delete(@Param('id') id: string, @Request() req) {
+    return this.usuariosService.delete(+id, req.user.userId);
   }
 }
 

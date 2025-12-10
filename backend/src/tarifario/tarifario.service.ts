@@ -154,7 +154,10 @@ export class TarifarioService {
     // Determinar qué tarifa aplicar
     let codigoTarifa = 'SERVICIO_BASE_T1';
 
-    if (tiene_medidor && consumo_m3 > 20) {
+    // Entidades públicas tienen su propio concepto fijo
+    if (tipoCliente === TipoCliente.ENTIDAD_PUBLICA) {
+      codigoTarifa = 'SERVICIO_BASE_EP';
+    } else if (tiene_medidor && consumo_m3 > 20) {
       codigoTarifa = 'SERVICIO_BASE_T2';
     }
 

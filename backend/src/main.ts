@@ -1,5 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import * as express from 'express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -15,6 +17,10 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
+
+  // Servir archivos estáticos (comprobantes, etc.)
+  const uploadsPath = join(__dirname, '..', 'uploads');
+  app.use('/uploads', express.static(uploadsPath));
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,

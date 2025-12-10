@@ -12,6 +12,8 @@ export class BoletaPdfService {
     direccion: 'Corraleras Km.13 CP: 5535 | Gustavo André | Lavalle | Mendoza',
     whatsapp: '2616718105',
     tipoFactura: 'IVA EXENTO',
+    // Ruta opcional a un logo institucional (PNG/SVG/JPG). Si no está presente, se muestra un marcador de posición.
+    logoPath: process.env.ASOC_LOGO_PATH,
   };
 
   // Formatea un número como moneda argentina
@@ -117,10 +119,8 @@ export class BoletaPdfService {
        .fillColor('#0066CC')
        .fill();
 
-    // Logo/Icono
-    doc.fontSize(18)
-       .fillColor('#FFFFFF')
-       .text('💧', margenIzq + 8, y + 7);
+    // Logo institucional (reserva de espacio para subir imagen real)
+    this.dibujarLogo(doc, margenIzq + 8, y + 4, 24, 24);
 
     // Nombre de la asociación
     doc.fontSize(10)
@@ -245,8 +245,24 @@ export class BoletaPdfService {
     // ==========================================
 
     const medidorActivo = boleta.usuario?.medidores?.find(m => m.activo);
-    const lecturaAnterior = Number(boleta.lectura?.lecturaAnterior || medidorActivo?.lecturaInicial || 0);
     const lecturaActual = Number(boleta.lectura?.lecturaActual || 0);
+    const consumoCalculado = Number(boleta.consumo_m3 || boleta.lectura?.consumoM3 || 0);
+
+    // Mostrar como lectura anterior la base usada para calcular el consumo.
+    // Si hay consumo y lectura actual, tomamos lecturaActual - consumo (no negativa).
+    // Si no, usamos lecturaAnterior persistida o la lectura inicial del medidor.
+    let lecturaAnterior = Number(
+      boleta.lectura?.lecturaAnterior ??
+      medidorActivo?.lecturaInicial ??
+      0
+    );
+
+    if (!Number.isNaN(lecturaActual) && !Number.isNaN(consumoCalculado) && consumoCalculado >= 0) {
+      const posibleLecturaAnterior = lecturaActual - consumoCalculado;
+      if (posibleLecturaAnterior >= 0) {
+        lecturaAnterior = posibleLecturaAnterior;
+      }
+    }
 
     doc.rect(margenIzq, y, anchoTotal, 35)
        .fillColor('#F0F7FF')
@@ -307,6 +323,9 @@ export class BoletaPdfService {
     let yDetalle = y;
     let lineCount = 0;
 
+    // Monto de cuota social (opcional). Si es 0 o no viene, no se muestra.
+    const montoCuotaSocial = Number((boleta as any).monto_cuota_social ?? 0);
+
     // Conceptos fijos
     doc.fontSize(7)
        .font('Helvetica-Bold')
@@ -316,18 +335,19 @@ export class BoletaPdfService {
     yDetalle += 14;
     lineCount++;
 
-    // Cuota Social (incluida)
-    doc.fontSize(6.5)
-       .font('Helvetica')
-       .fillColor('#666666')
-       .text('• Cuota Social', margenIzq + 15, yDetalle)
-       .text('-', margenDer - 210, yDetalle, { width: 60, align: 'right' })
-       .text('-', margenDer - 140, yDetalle, { width: 70, align: 'right' })
-       .fillColor('#000000')
-       .text(this.formatCurrency(0), margenDer - 60, yDetalle, { width: 60, align: 'right' });
+    if (montoCuotaSocial > 0) {
+      doc.fontSize(6.5)
+         .font('Helvetica')
+         .fillColor('#666666')
+         .text('• Cuota Social', margenIzq + 15, yDetalle)
+         .text('-', margenDer - 210, yDetalle, { width: 60, align: 'right' })
+         .text('-', margenDer - 140, yDetalle, { width: 70, align: 'right' })
+         .fillColor('#000000')
+         .text(this.formatCurrency(montoCuotaSocial), margenDer - 60, yDetalle, { width: 60, align: 'right' });
 
-    yDetalle += 11;
-    lineCount++;
+      yDetalle += 11;
+      lineCount++;
+    }
 
     // Servicio de Agua Potable
     doc.fillColor('#666666')
@@ -474,11 +494,11 @@ export class BoletaPdfService {
     
     doc.font('Helvetica')
        .fillColor('#666666')
-       .text('Banco Nación | Oficina Comercial | Transferencia: AGUA.GUSTAVO.ANDRE', margenIzq + 90, y + 5);
+       .text('Banco Nación | Oficina Comercial | Transferencia: AGUA.GUSTAVO.ANDRE', margenIzq + 90, y + 5, { width: anchoTotal - 100 });
 
     doc.fontSize(5.5)
        .fillColor('#666666')
-       .text('⚠️ Esta boleta debe abonarse antes de la fecha de vencimiento. Vencida tendrá recargo.', margenIzq + 8, y + 14, { width: anchoTotal - 16 });
+       .text('⚠️ Abone antes del vencimiento para evitar recargos. Conserve el comprobante y presente este talón si paga en ventanilla.', margenIzq + 8, y + 14, { width: anchoTotal - 16 });
 
     y += 30;
 
@@ -510,10 +530,12 @@ export class BoletaPdfService {
        .stroke();
 
     // Logo y nombre en el talón
+    this.dibujarLogo(doc, margenIzq + 8, y + 7, 16, 16, '#0066CC', '#0066CC');
+
     doc.fontSize(10)
        .font('Helvetica-Bold')
        .fillColor('#0066CC')
-       .text('💧 ' + this.ASOCIACION.nombre, margenIzq + 8, y + 6);
+       .text(this.ASOCIACION.nombre, margenIzq + 28, y + 6, { width: 260 });
 
     doc.fontSize(6)
        .font('Helvetica')
@@ -564,6 +586,47 @@ export class BoletaPdfService {
     
     doc.fontSize(11)
        .text(this.formatCurrency(Number(boleta.total) || 0), margenDer - 85, y + 20);
+  }
+
+  private dibujarLogo(
+    doc: any,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    strokeColor = '#FFFFFF',
+    textColor = '#FFFFFF',
+  ) {
+    const padding = 2;
+
+    doc.save();
+    doc.rect(x, y, width, height)
+       .lineWidth(0.8)
+       .strokeColor(strokeColor)
+       .stroke();
+
+    const logoDisponible = this.ASOCIACION.logoPath;
+
+    if (logoDisponible) {
+      try {
+        doc.image(logoDisponible, x + padding, y + padding, {
+          fit: [width - padding * 2, height - padding * 2],
+          align: 'left',
+          valign: 'center',
+        });
+        doc.restore();
+        return;
+      } catch (err) {
+        // Si falla la carga del logo, se mostrará el marcador de posición.
+      }
+    }
+
+    doc.fontSize(Math.min(7, height - 6))
+       .font('Helvetica-Bold')
+       .fillColor(textColor)
+       .text('LOGO', x, y + height / 2 - 4, { width, align: 'center' });
+
+    doc.restore();
   }
 
   // Convierte número a letras (básico)

@@ -11,7 +11,9 @@ function Sidebar() {
     {
       title: 'Principal',
       items: [
+        { path: '/administrativo/estadisticas', icon: 'query_stats', label: 'Estadísticas' },
         { path: '/administrativo/clientes', icon: 'group', label: 'Clientes', fill: true },
+        { path: '/administrativo/auditoria', icon: 'admin_panel_settings', label: 'Auditoría' },
       ]
     },
     {
@@ -19,6 +21,7 @@ function Sidebar() {
       items: [
         { path: '/administrativo/generar-boletas', icon: 'receipt_long', label: 'Generar Boletas' },
         { path: '/administrativo/control-pagos', icon: 'fact_check', label: 'Control de Pagos', fill: true },
+        { path: '/administrativo/cobros-efectivo', icon: 'point_of_sale', label: 'Cobros en Efectivo' },
         { path: '/administrativo/estados-servicio', icon: 'monitor_heart', label: 'Estados de Servicio' },
       ]
     },
@@ -27,6 +30,7 @@ function Sidebar() {
       items: [
         { path: '/administrativo/tarifario', icon: 'payments', label: 'Tarifario' },
         { path: '/administrativo/zonas', icon: 'map', label: 'Zonas' },
+        { path: '/administrativo/usuarios-sistema', icon: 'manage_accounts', label: 'Usuarios Sistema', fill: true },
       ]
     }
   ];

@@ -17,6 +17,11 @@ import GenerarBoletas from './pages/GenerarBoletas';
 import ControlPagos from './pages/ControlPagos';
 import PagarBoleta from './pages/PagarBoleta';
 import ZonasAdmin from './pages/ZonasAdmin';
+import UsuariosSistema from './pages/UsuariosSistema';
+import AuditoriaCambios from './pages/AuditoriaCambios';
+import BoletasClienteAdmin from './pages/BoletasClienteAdmin';
+import CobrosEfectivo from './pages/CobrosEfectivo';
+import Estadisticas from './pages/Estadisticas';
 
 function PrivateRoute({ children, allowedRoles }) {
   const { user } = useAuth();
@@ -113,6 +118,15 @@ function App() {
           />
 
           <Route 
+            path="/administrativo/clientes/:id/boletas" 
+            element={
+              <PrivateRoute allowedRoles={['administrativo']}>
+                <BoletasClienteAdmin />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
             path="/administrativo/clientes/editar/:id" 
             element={
               <PrivateRoute allowedRoles={['administrativo']}>
@@ -167,10 +181,46 @@ function App() {
           />
 
           <Route 
+            path="/administrativo/cobros-efectivo" 
+            element={
+              <PrivateRoute allowedRoles={['administrativo']}>
+                <CobrosEfectivo />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
             path="/administrativo/zonas" 
             element={
               <PrivateRoute allowedRoles={['administrativo']}>
                 <ZonasAdmin />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
+            path="/administrativo/usuarios-sistema" 
+            element={
+              <PrivateRoute allowedRoles={['administrativo']}>
+                <UsuariosSistema />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
+            path="/administrativo/auditoria" 
+            element={
+              <PrivateRoute allowedRoles={['administrativo']}>
+                <AuditoriaCambios />
+              </PrivateRoute>
+            } 
+          />
+
+          <Route 
+            path="/administrativo/estadisticas" 
+            element={
+              <PrivateRoute allowedRoles={['administrativo']}>
+                <Estadisticas />
               </PrivateRoute>
             } 
           />

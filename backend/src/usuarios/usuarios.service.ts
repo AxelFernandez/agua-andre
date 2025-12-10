@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Usuario } from '../entities/usuario.entity';
 import { Zona } from '../entities/zona.entity';
 import * as bcrypt from 'bcrypt';
+import { AuditoriaService } from '../auditoria/auditoria.service';
+import { TipoAccionAuditoria } from '../entities/auditoria-registro.entity';
 
 @Injectable()
 export class UsuariosService {
@@ -12,6 +14,7 @@ export class UsuariosService {
     private usuariosRepository: Repository<Usuario>,
     @InjectRepository(Zona)
     private zonasRepository: Repository<Zona>,
+    private readonly auditoriaService: AuditoriaService,
   ) {}
 
   async findAll(): Promise<Usuario[]> {
@@ -61,7 +64,7 @@ export class UsuariosService {
     return usuario;
   }
 
-  async create(usuarioData: Partial<Usuario>): Promise<Usuario> {
+  async create(usuarioData: Partial<Usuario>, actorId?: number): Promise<Usuario> {
     // Generar padrón SOLO para clientes (no para admin/operario)
     if (usuarioData.rol === 'cliente' && !usuarioData.padron && usuarioData.zona) {
       const zona = await this.zonasRepository.findOne({
@@ -92,32 +95,93 @@ export class UsuariosService {
     }
 
     const usuario = this.usuariosRepository.create(usuarioData);
-    return this.usuariosRepository.save(usuario);
+    const creado = await this.usuariosRepository.save(usuario);
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'usuarios',
+      entidad: 'Usuario',
+      registroId: creado.id,
+      accion: TipoAccionAuditoria.CREACION,
+      descripcion: 'Creación de usuario',
+      datosNuevos: this.sanitizarObjeto({
+        id: creado.id,
+        nombre: creado.nombre,
+        email: creado.email,
+        padron: creado.padron,
+        rol: creado.rol,
+        zonaId: creado.zona?.id,
+      }),
+    });
+
+    return creado;
   }
 
-  async update(id: number, usuarioData: Partial<Usuario>): Promise<Usuario> {
+  async update(id: number, usuarioData: Partial<Usuario>, actorId?: number): Promise<Usuario> {
     const usuario = await this.findOne(id);
+    const datosPrevios = this.sanitizarObjeto({
+      nombre: usuario.nombre,
+      email: usuario.email,
+      padron: usuario.padron,
+      rol: usuario.rol,
+      zonaId: (usuario as any).zona?.id,
+    });
     
     if (usuarioData.password) {
       usuarioData.password = await bcrypt.hash(usuarioData.password, 10);
     }
     
     Object.assign(usuario, usuarioData);
-    return this.usuariosRepository.save(usuario);
+    const actualizado = await this.usuariosRepository.save(usuario);
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'usuarios',
+      entidad: 'Usuario',
+      registroId: actualizado.id,
+      accion: TipoAccionAuditoria.ACTUALIZACION,
+      descripcion: 'Actualización de usuario',
+      datosPrevios,
+      datosNuevos: this.sanitizarObjeto({
+        nombre: actualizado.nombre,
+        email: actualizado.email,
+        padron: actualizado.padron,
+        rol: actualizado.rol,
+        zonaId: (actualizado as any).zona?.id,
+      }),
+    });
+
+    return actualizado;
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: number, actorId?: number): Promise<void> {
     const usuario = await this.findOne(id);
     await this.usuariosRepository.remove(usuario);
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'usuarios',
+      entidad: 'Usuario',
+      registroId: id,
+      accion: TipoAccionAuditoria.ELIMINACION,
+      descripcion: 'Eliminación de usuario',
+      datosPrevios: this.sanitizarObjeto({
+        nombre: usuario.nombre,
+        email: usuario.email,
+        padron: usuario.padron,
+        rol: usuario.rol,
+        zonaId: (usuario as any).zona?.id,
+      }),
+    });
   }
 
-  async importarUsuarios(usuarios: any[]): Promise<{ exito: number; errores: any[] }> {
+  async importarUsuarios(usuarios: any[], actorId?: number): Promise<{ exito: number; errores: any[] }> {
     let exito = 0;
     const errores = [];
 
     for (const usuarioData of usuarios) {
       try {
-        await this.create(usuarioData);
+        await this.create(usuarioData, actorId);
         exito++;
       } catch (error) {
         errores.push({
@@ -128,6 +192,24 @@ export class UsuariosService {
     }
 
     return { exito, errores };
+  }
+
+  private sanitizarObjeto(
+    data: Record<string, any> | null | undefined,
+  ): Record<string, any> | null {
+    if (!data) {
+      return null;
+    }
+
+    const limpio = Object.entries(data).reduce((acc, [key, value]) => {
+      if (typeof value === 'undefined') {
+        return acc;
+      }
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.keys(limpio).length ? limpio : null;
   }
 }
 

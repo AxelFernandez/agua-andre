@@ -32,22 +32,25 @@ export class LecturasController {
   @Post()
   @Roles(RolUsuario.OPERARIO, RolUsuario.ADMINISTRATIVO)
   create(@Body() lecturaData: any, @Request() req) {
-    return this.lecturasService.create({
-      ...lecturaData,
-      operario: { id: req.user.userId },
-    });
+    return this.lecturasService.create(
+      {
+        ...lecturaData,
+        operario: { id: req.user.userId },
+      },
+      req.user.userId,
+    );
   }
 
   @Put(':id')
   @Roles(RolUsuario.OPERARIO, RolUsuario.ADMINISTRATIVO)
-  update(@Param('id') id: string, @Body() lecturaData: any) {
-    return this.lecturasService.update(+id, lecturaData);
+  update(@Param('id') id: string, @Body() lecturaData: any, @Request() req) {
+    return this.lecturasService.update(+id, lecturaData, req.user.userId);
   }
 
   @Delete(':id')
   @Roles(RolUsuario.ADMINISTRATIVO)
-  delete(@Param('id') id: string) {
-    return this.lecturasService.delete(+id);
+  delete(@Param('id') id: string, @Request() req) {
+    return this.lecturasService.delete(+id, req.user.userId);
   }
 }
 

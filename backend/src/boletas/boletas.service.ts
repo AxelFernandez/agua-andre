@@ -2,18 +2,18 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Boleta, EstadoBoleta } from '../entities/boleta.entity';
-import { Usuario } from '../entities/usuario.entity';
 import { Lectura } from '../entities/lectura.entity';
+import { AuditoriaService } from '../auditoria/auditoria.service';
+import { TipoAccionAuditoria } from '../entities/auditoria-registro.entity';
 
 @Injectable()
 export class BoletasService {
   constructor(
     @InjectRepository(Boleta)
     private boletasRepository: Repository<Boleta>,
-    @InjectRepository(Usuario)
-    private usuariosRepository: Repository<Usuario>,
     @InjectRepository(Lectura)
     private lecturasRepository: Repository<Lectura>,
+    private readonly auditoriaService: AuditoriaService,
   ) {}
 
   async findAll(): Promise<Boleta[]> {
@@ -43,7 +43,11 @@ export class BoletasService {
     return boleta;
   }
 
-  async generarBoleta(lecturaId: number, tarifaBase: number = 500): Promise<Boleta> {
+  async generarBoleta(
+    lecturaId: number,
+    tarifaBase: number = 500,
+    actorId?: number,
+  ): Promise<Boleta> {
     const lectura = await this.lecturasRepository.findOne({
       where: { id: lecturaId },
       relations: ['medidor', 'medidor.usuario'],
@@ -76,22 +80,132 @@ export class BoletasService {
       estado: EstadoBoleta.PENDIENTE,
     });
 
-    return this.boletasRepository.save(boleta);
+    const guardada = await this.boletasRepository.save(boleta);
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'boletas',
+      entidad: 'Boleta',
+      registroId: guardada.id,
+      accion: TipoAccionAuditoria.CREACION,
+      descripcion: `Generación manual de boleta a partir de la lectura ${lecturaId}`,
+      datosNuevos: this.sanitizarObjeto({
+        usuarioId: usuario.id,
+        lecturaId: lectura.id,
+        mes: guardada.mes,
+        anio: guardada.anio,
+        montoBase: guardada.montoBase,
+        montoTotal: guardada.montoTotal,
+        estado: guardada.estado,
+      }),
+      metadata: {
+        lecturaId: lectura.id,
+        medidorId: lectura.medidor.id,
+        consumoM3: lectura.consumoM3,
+      },
+    });
+
+    return guardada;
   }
 
-  async update(id: number, boletaData: Partial<Boleta>): Promise<Boleta> {
+  async update(
+    id: number,
+    boletaData: Partial<Boleta>,
+    actorId?: number,
+    descripcion = 'Actualización manual de boleta',
+  ): Promise<Boleta> {
     const boleta = await this.findOne(id);
+    const datosPrevios = this.extraerPrevios(boleta, boletaData);
+
     Object.assign(boleta, boletaData);
-    return this.boletasRepository.save(boleta);
+    const actualizada = await this.boletasRepository.save(boleta);
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'boletas',
+      entidad: 'Boleta',
+      registroId: actualizada.id,
+      accion: TipoAccionAuditoria.ACTUALIZACION,
+      descripcion,
+      datosPrevios,
+      datosNuevos: this.sanitizarObjeto(boletaData),
+      metadata: {
+        usuarioId: actualizada.usuario?.id,
+        lecturaId: actualizada.lectura?.id,
+      },
+    });
+
+    return actualizada;
   }
 
-  async marcarComoPagada(id: number): Promise<Boleta> {
-    return this.update(id, { estado: EstadoBoleta.PAGADA });
+  async marcarComoPagada(id: number, actorId?: number): Promise<Boleta> {
+    return this.update(
+      id,
+      { estado: EstadoBoleta.PAGADA },
+      actorId,
+      'Cambio de estado a PAGADA',
+    );
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: number, actorId?: number): Promise<void> {
     const boleta = await this.findOne(id);
     await this.boletasRepository.remove(boleta);
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'boletas',
+      entidad: 'Boleta',
+      registroId: boleta.id,
+      accion: TipoAccionAuditoria.ELIMINACION,
+      descripcion: 'Eliminación manual de boleta',
+      datosPrevios: this.sanitizarObjeto({
+        estado: boleta.estado,
+        montoTotal: boleta.montoTotal,
+        usuarioId: boleta.usuario?.id,
+        lecturaId: boleta.lectura?.id,
+      }),
+      metadata: {
+        usuarioId: boleta.usuario?.id,
+        lecturaId: boleta.lectura?.id,
+      },
+    });
+  }
+
+  private extraerPrevios(
+    boleta: Boleta,
+    cambios: Partial<Boleta>,
+  ): Record<string, any> | null {
+    if (!cambios) {
+      return null;
+    }
+
+    const previos = Object.entries(cambios).reduce((acc, [key, value]) => {
+      if (typeof value === 'undefined') {
+        return acc;
+      }
+      acc[key] = (boleta as any)[key];
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.keys(previos).length ? previos : null;
+  }
+
+  private sanitizarObjeto(
+    data: Record<string, any> | null | undefined,
+  ): Record<string, any> | null {
+    if (!data) {
+      return null;
+    }
+
+    const limpio = Object.entries(data).reduce((acc, [key, value]) => {
+      if (typeof value === 'undefined') {
+        return acc;
+      }
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.keys(limpio).length ? limpio : null;
   }
 }
 

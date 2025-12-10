@@ -34,26 +34,33 @@ export class BoletasController {
 
   @Post('generar')
   @Roles(RolUsuario.ADMINISTRATIVO)
-  generarBoleta(@Body() data: { lecturaId: number; tarifaBase?: number }) {
-    return this.boletasService.generarBoleta(data.lecturaId, data.tarifaBase);
+  generarBoleta(
+    @Body() data: { lecturaId: number; tarifaBase?: number },
+    @Request() req,
+  ) {
+    return this.boletasService.generarBoleta(
+      data.lecturaId,
+      data.tarifaBase,
+      req.user.userId,
+    );
   }
 
   @Put(':id')
   @Roles(RolUsuario.ADMINISTRATIVO)
-  update(@Param('id') id: string, @Body() boletaData: any) {
-    return this.boletasService.update(+id, boletaData);
+  update(@Param('id') id: string, @Body() boletaData: any, @Request() req) {
+    return this.boletasService.update(+id, boletaData, req.user.userId);
   }
 
   @Put(':id/marcar-pagada')
   @Roles(RolUsuario.ADMINISTRATIVO)
-  marcarComoPagada(@Param('id') id: string) {
-    return this.boletasService.marcarComoPagada(+id);
+  marcarComoPagada(@Param('id') id: string, @Request() req) {
+    return this.boletasService.marcarComoPagada(+id, req.user.userId);
   }
 
   @Delete(':id')
   @Roles(RolUsuario.ADMINISTRATIVO)
-  delete(@Param('id') id: string) {
-    return this.boletasService.delete(+id);
+  delete(@Param('id') id: string, @Request() req) {
+    return this.boletasService.delete(+id, req.user.userId);
   }
 }
 

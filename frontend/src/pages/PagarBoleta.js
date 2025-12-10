@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from '../services/axios';
@@ -112,6 +112,16 @@ function PagarBoleta() {
     });
   };
 
+  const formatearFechaHora = (fecha) => {
+    return new Date(fecha).toLocaleString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const formatearMonto = (monto) => {
     return parseFloat(monto || 0).toFixed(2);
   };
@@ -128,6 +138,13 @@ function PagarBoleta() {
     if (maxConsumo === 0) return 0;
     return ((consumo || 0) / maxConsumo) * 100;
   };
+
+  const ultimoPagoRechazado = useMemo(() => {
+    if (!boleta?.pagos || !boleta.pagos.length) return null;
+    return [...boleta.pagos]
+      .filter(p => p.estado === 'rechazado')
+      .sort((a, b) => new Date(b.fechaPago) - new Date(a.fechaPago))[0] || null;
+  }, [boleta]);
 
   if (loading) {
     return (
@@ -200,6 +217,23 @@ function PagarBoleta() {
 
       <main className="px-4 sm:px-8 md:px-10 lg:px-20 xl:px-40 py-5">
         <div className="max-w-7xl mx-auto">
+          {ultimoPagoRechazado && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              <div className="flex items-start gap-2">
+                <span className="material-symbols-outlined">cancel</span>
+                <div>
+                  <p className="font-semibold">Pago rechazado</p>
+                  {ultimoPagoRechazado.observaciones && (
+                    <p className="mt-1">{ultimoPagoRechazado.observaciones}</p>
+                  )}
+                  <p className="mt-1 text-xs text-red-700">
+                    Fecha: {formatearFechaHora(ultimoPagoRechazado.fechaPago)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Breadcrumb */}
           <div className="flex flex-wrap gap-2 mb-4">
             <button 

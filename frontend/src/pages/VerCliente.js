@@ -34,7 +34,7 @@ function VerCliente() {
     try {
       const [clienteRes, boletasRes] = await Promise.all([
         axios.get(`/usuarios/${id}`),
-        axios.get(`/boletas?usuarioId=${id}`).catch(() => ({ data: [] })),
+        axios.get(`/boletas/usuario/${id}`).catch(() => ({ data: [] })),
       ]);
       
       setCliente(clienteRes.data);
@@ -355,7 +355,10 @@ function VerCliente() {
               <div className="bg-white dark:bg-background-dark dark:border dark:border-gray-700 rounded-xl shadow-sm p-6">
                 <h3 className="text-sm font-medium text-[#617c89] dark:text-gray-400 mb-4">Acciones Rápidas</h3>
                 <div className="space-y-2">
-                  <button className="w-full flex items-center gap-3 px-4 py-3 bg-[#f0f3f4] dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                  <button
+                    onClick={() => navigate(`/administrativo/clientes/${id}/boletas`)}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-[#f0f3f4] dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  >
                     <span className="material-symbols-outlined text-primary">receipt</span>
                     <span className="text-sm font-medium text-[#111618] dark:text-white">Ver Boletas</span>
                   </button>

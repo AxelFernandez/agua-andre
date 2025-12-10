@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lectura } from '../entities/lectura.entity';
 import { Medidor } from '../entities/medidor.entity';
-import { Usuario } from '../entities/usuario.entity';
+import { AuditoriaService } from '../auditoria/auditoria.service';
+import { TipoAccionAuditoria } from '../entities/auditoria-registro.entity';
 
 @Injectable()
 export class LecturasService {
@@ -12,8 +13,7 @@ export class LecturasService {
     private lecturasRepository: Repository<Lectura>,
     @InjectRepository(Medidor)
     private medidoresRepository: Repository<Medidor>,
-    @InjectRepository(Usuario)
-    private usuariosRepository: Repository<Usuario>,
+    private readonly auditoriaService: AuditoriaService,
   ) {}
 
   async findAll(): Promise<Lectura[]> {
@@ -38,7 +38,7 @@ export class LecturasService {
     });
   }
 
-  async create(lecturaData: any): Promise<Lectura> {
+  async create(lecturaData: any, actorId?: number): Promise<Lectura> {
     const medidor = await this.medidoresRepository.findOne({
       where: { id: lecturaData.medidorId },
       relations: ['usuario'],
@@ -70,8 +70,30 @@ export class LecturasService {
       anio: new Date().getFullYear(),
     });
 
-    const saved = await this.lecturasRepository.save(lectura);
-    return saved as unknown as Lectura;
+    const saved = await this.lecturasRepository.save(lectura) as unknown as Lectura;
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'lecturas',
+      entidad: 'Lectura',
+      registroId: saved.id,
+      accion: TipoAccionAuditoria.CREACION,
+      descripcion: `Carga de lectura para el medidor ${medidor.id}`,
+      datosNuevos: this.sanitizarObjeto({
+        medidorId: medidor.id,
+        lecturaAnterior,
+        lecturaActual: saved.lecturaActual,
+        consumoM3: saved.consumoM3,
+        mes: saved.mes,
+        anio: saved.anio,
+      }),
+      metadata: {
+        usuarioClienteId: medidor.usuario?.id,
+        padron: medidor.usuario?.padron,
+      },
+    });
+
+    return saved;
   }
 
   async findOne(id: number): Promise<Lectura> {
@@ -87,8 +109,13 @@ export class LecturasService {
     return lectura;
   }
 
-  async update(id: number, lecturaData: Partial<Lectura>): Promise<Lectura> {
+  async update(
+    id: number,
+    lecturaData: Partial<Lectura>,
+    actorId?: number,
+  ): Promise<Lectura> {
     const lectura = await this.findOne(id);
+    const datosPrevios = this.extraerPrevios(lectura, lecturaData);
     
     if (lecturaData.lecturaActual && lectura.lecturaAnterior) {
       lecturaData.consumoM3 = lecturaData.lecturaActual - lectura.lecturaAnterior;
@@ -96,12 +123,86 @@ export class LecturasService {
     
     Object.assign(lectura, lecturaData);
     const updated = await this.lecturasRepository.save(lectura);
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'lecturas',
+      entidad: 'Lectura',
+      registroId: updated.id,
+      accion: TipoAccionAuditoria.ACTUALIZACION,
+      descripcion: 'Edición manual de lectura registrada',
+      datosPrevios,
+      datosNuevos: this.sanitizarObjeto(lecturaData),
+      metadata: {
+        medidorId: lectura.medidor?.id,
+        usuarioClienteId: lectura.medidor?.usuario?.id,
+      },
+    });
+
     return updated;
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: number, actorId?: number): Promise<void> {
     const lectura = await this.findOne(id);
     await this.lecturasRepository.remove(lectura);
+
+    await this.auditoriaService.registrarEvento({
+      usuarioId: actorId,
+      modulo: 'lecturas',
+      entidad: 'Lectura',
+      registroId: lectura.id,
+      accion: TipoAccionAuditoria.ELIMINACION,
+      descripcion: 'Eliminación manual de lectura registrada',
+      datosPrevios: this.sanitizarObjeto({
+        medidorId: lectura.medidor?.id,
+        lecturaAnterior: lectura.lecturaAnterior,
+        lecturaActual: lectura.lecturaActual,
+        consumoM3: lectura.consumoM3,
+        mes: lectura.mes,
+        anio: lectura.anio,
+      }),
+      metadata: {
+        medidorId: lectura.medidor?.id,
+        usuarioClienteId: lectura.medidor?.usuario?.id,
+      },
+    });
+  }
+
+  private extraerPrevios(
+    lectura: Lectura,
+    cambios: Partial<Lectura>,
+  ): Record<string, any> | null {
+    if (!cambios) {
+      return null;
+    }
+
+    const previos = Object.entries(cambios).reduce((acc, [key, value]) => {
+      if (typeof value === 'undefined') {
+        return acc;
+      }
+      acc[key] = (lectura as any)[key];
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.keys(previos).length ? previos : null;
+  }
+
+  private sanitizarObjeto(
+    data: Record<string, any> | null | undefined,
+  ): Record<string, any> | null {
+    if (!data) {
+      return null;
+    }
+
+    const limpio = Object.entries(data).reduce((acc, [key, value]) => {
+      if (typeof value === 'undefined') {
+        return acc;
+      }
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.keys(limpio).length ? limpio : null;
   }
 }
 

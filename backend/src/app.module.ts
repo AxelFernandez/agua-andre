@@ -13,6 +13,8 @@ import { SeedModule } from './database/seed.module';
 import { ImportModule } from './import/import.module';
 import { TarifarioModule } from './tarifario/tarifario.module';
 import { HealthModule } from './health/health.module';
+import { AuditoriaModule } from './auditoria/auditoria.module';
+import { EstadisticasModule } from './estadisticas/estadisticas.module';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -44,6 +46,8 @@ const isProduction = process.env.NODE_ENV === 'production';
     SeedModule,
     ImportModule,
     TarifarioModule,
+    AuditoriaModule,
+    EstadisticasModule,
   ],
 })
 export class AppModule {}

@@ -59,6 +59,15 @@ export class PagosController {
     });
   }
 
+  @Post('efectivo')
+  @Roles(RolUsuario.ADMINISTRATIVO)
+  registrarEfectivo(
+    @Body() data: { boletaId: number; monto?: number; fechaPago?: string; observaciones?: string },
+    @Request() req,
+  ) {
+    return this.pagosService.registrarPagoEfectivo(data, req.user.userId);
+  }
+
   @Put(':id/aprobar')
   @Roles(RolUsuario.ADMINISTRATIVO)
   aprobar(@Param('id') id: string, @Request() req) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from '../services/axios';
@@ -152,6 +152,16 @@ function DashboardCliente() {
     return `${meses[mes - 1]} ${anio}`;
   };
 
+  const formatearFechaHora = (fecha) => {
+    return new Date(fecha).toLocaleString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const calcularAltura = (consumo) => {
     if (!lecturas.length) return 0;
     const maxConsumo = Math.max(...lecturas.map(l => l.consumoM3 || 0));
@@ -160,6 +170,14 @@ function DashboardCliente() {
     // Asegurar que al menos se vea algo si hay consumo
     return altura > 0 ? Math.max(altura, 10) : 0;
   };
+
+  const ultimoPagoRechazado = useMemo(() => {
+    const pagosRechazados = boletas.flatMap(b =>
+      (b.pagos || []).filter(p => p.estado === 'rechazado').map(p => ({ ...p, boleta: b }))
+    );
+    if (!pagosRechazados.length) return null;
+    return pagosRechazados.sort((a, b) => new Date(b.fechaPago) - new Date(a.fechaPago))[0];
+  }, [boletas]);
 
   const boletaPendiente = obtenerBoletaPendiente();
 
@@ -205,6 +223,26 @@ function DashboardCliente() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {ultimoPagoRechazado && ultimoPagoRechazado.boleta?.estado === 'pendiente' && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <div className="flex items-start gap-2">
+              <span className="material-symbols-outlined">cancel</span>
+              <div>
+                <p className="font-semibold">Pago rechazado</p>
+                <p className="mt-1">
+                  Boleta {ultimoPagoRechazado.boleta.mes}/{ultimoPagoRechazado.boleta.anio} • ID #{ultimoPagoRechazado.boleta.id}
+                </p>
+                {ultimoPagoRechazado.observaciones && (
+                  <p className="mt-1">{ultimoPagoRechazado.observaciones}</p>
+                )}
+                <p className="mt-1 text-xs text-red-700">
+                  Fecha: {formatearFechaHora(ultimoPagoRechazado.fechaPago)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Page Heading */}
         <div className="flex flex-wrap justify-between gap-3 items-center mb-6">
           <h1 className="text-[#111618] dark:text-white text-3xl md:text-4xl font-black leading-tight">

@@ -3,23 +3,27 @@
 
 -- Insertar Zonas
 INSERT INTO zonas (nombre, valor, descripcion, "createdAt", "updatedAt") VALUES
-('Gustavo André', 100, 'Zona principal de Gustavo André', NOW(), NOW()),
-('Zona Norte', 101, 'Zona Norte del distrito', NOW(), NOW()),
-('Zona Sur', 102, 'Zona Sur del distrito', NOW(), NOW())
+('Gustavo André', 100, 'Operario: Luis Ríos', NOW(), NOW()),
+('Asunción', 200, 'Operario: Jofre Javier', NOW(), NOW()),
+('Retiro', 300, 'Operario: Perez Matias', NOW(), NOW()),
+('San Miguel / Puerto', 400, 'Operario: Villegas Aldo / Lucero Ramon', NOW(), NOW()),
+('Retamo / Forzudo', 500, 'Operario: Zalaba Juan / Soria Jose', NOW(), NOW()),
+('San Jose', 600, 'Operario: Gonzalez Edgar', NOW(), NOW()),
+('Lagunas Del Rosario', 700, 'Operario: Zalazar Juan', NOW(), NOW()),
 ON CONFLICT DO NOTHING;
 
 -- Insertar Usuarios de prueba
 -- Nota: La contraseña 'admin123' hasheada con bcrypt (10 rounds)
 -- Hash: $2b$10$YQ8P8Z4KWXhV8K8qVZq3.eY7LqZ4xKZqZ8qZ8qZ8qZ8qZ8qZ8qZ8q
 
--- Administrativo
-INSERT INTO usuarios (nombre, direccion, email, padron, rol, password, "zonaId", orden, tipo, "createdAt", "updatedAt") VALUES
-('Admin Sistema', 'Oficina Central', 'admin@aguagandre.com', '100-0001', 'administrativo', '$2b$10$YQ8P8Z4KWXhV8K8qVZq3.eY7LqZ4xKZqZ8qZ8qZ8qZ8qZ8qZ8qZ8q', 1, 1, 'residencial', NOW(), NOW())
+-- Administrativo (sin padrón - los padrones son exclusivos para clientes)
+INSERT INTO usuarios (nombre, direccion, email, rol, password, "createdAt", "updatedAt") VALUES
+('Admin Sistema', 'Oficina Central', 'admin@aguagandre.com', 'administrativo', '$2b$10$YQ8P8Z4KWXhV8K8qVZq3.eY7LqZ4xKZqZ8qZ8qZ8qZ8qZ8qZ8qZ8q', NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
--- Operario
-INSERT INTO usuarios (nombre, direccion, email, padron, rol, password, "zonaId", orden, tipo, "createdAt", "updatedAt") VALUES
-('Juan Pérez', 'Calle Principal 123', 'operario@aguagandre.com', '100-0002', 'operario', '$2b$10$YQ8P8Z4KWXhV8K8qVZq3.eY7LqZ4xKZqZ8qZ8qZ8qZ8qZ8qZ8qZ8q', 1, 1, 'residencial', NOW(), NOW())
+-- Operario (sin padrón - los padrones son exclusivos para clientes)
+INSERT INTO usuarios (nombre, direccion, email, rol, password, "createdAt", "updatedAt") VALUES
+('Juan Pérez', 'Calle Principal 123', 'operario@aguagandre.com', 'operario', '$2b$10$YQ8P8Z4KWXhV8K8qVZq3.eY7LqZ4xKZqZ8qZ8qZ8qZ8qZ8qZ8qZ8q', NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 
