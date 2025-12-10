@@ -17,6 +17,8 @@ import { AuditoriaModule } from './auditoria/auditoria.module';
 import { EstadisticasModule } from './estadisticas/estadisticas.module';
 
 const isProduction = process.env.NODE_ENV === 'production';
+// Permite habilitar synchronize en entornos controlados (ej. primer despliegue)
+const allowSync = process.env.TYPEORM_SYNC === 'true';
 
 @Module({
   imports: [
@@ -32,7 +34,7 @@ const isProduction = process.env.NODE_ENV === 'production';
       password: process.env.DATABASE_PASSWORD || 'postgres123',
       database: process.env.DATABASE_NAME || 'agua_potable',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: !isProduction, // Deshabilitado en producción
+      synchronize: allowSync || !isProduction, // Deshabilitado en prod salvo flag
       logging: !isProduction,     // Sin logs en producción
     }),
     HealthModule,

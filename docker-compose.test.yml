@@ -5,13 +5,14 @@ services:
     image: postgres:15-alpine
     container_name: agua_db_test
     restart: always
+    env_file:
+      - .env.test
     environment:
       POSTGRES_DB: ${DATABASE_NAME:-agua_potable_test}
       POSTGRES_USER: ${DATABASE_USER:-postgres}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
       - postgres_data_test:/var/lib/postgresql/data
-      - ./init-database.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - agua_network_test
     healthcheck:
@@ -26,6 +27,8 @@ services:
       dockerfile: Dockerfile
     container_name: agua_backend_test
     restart: always
+    env_file:
+      - .env.test
     ports:
       - "127.0.0.1:3002:3002"
     environment:
@@ -55,6 +58,8 @@ services:
       dockerfile: Dockerfile
     container_name: agua_frontend_test
     restart: always
+    env_file:
+      - .env.test
     ports:
       - "127.0.0.1:8081:3000"
     environment:

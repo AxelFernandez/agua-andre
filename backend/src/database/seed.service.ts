@@ -28,39 +28,52 @@ export class SeedService implements OnModuleInit {
       return;
     }
 
-    console.log('🌱 Sembrando datos iniciales...');
+    console.log('🌱 Sembrando datos iniciales (zonas + usuarios base) ...');
 
-    // Crear zonas (valores reales del sistema)
-    const zonaGustavoAndre = await this.zonasRepository.save({
-      nombre: 'Gustavo André',
-      valor: 10,
-      descripcion: 'Zona principal de Gustavo André',
-    });
+    // Zonas según init-database.sql
+    const zonas = await this.zonasRepository.save([
+      {
+        nombre: 'Gustavo André',
+        valor: 100,
+        descripcion: 'Operario: Luis Ríos',
+      },
+      {
+        nombre: 'Asunción',
+        valor: 200,
+        descripcion: 'Operario: Jofre Javier',
+      },
+      {
+        nombre: 'Retiro',
+        valor: 300,
+        descripcion: 'Operario: Perez Matias',
+      },
+      {
+        nombre: 'San Miguel / Puerto',
+        valor: 400,
+        descripcion: 'Operario: Villegas Aldo / Lucero Ramon',
+      },
+      {
+        nombre: 'Retamo / Forzudo',
+        valor: 500,
+        descripcion: 'Operario: Zalaba Juan / Soria Jose',
+      },
+      {
+        nombre: 'San Jose',
+        valor: 600,
+        descripcion: 'Operario: Gonzalez Edgar',
+      },
+      {
+        nombre: 'Lagunas Del Rosario',
+        valor: 700,
+        descripcion: 'Operario: Zalazar Juan',
+      },
+    ]);
 
-    const zonaElRetiro = await this.zonasRepository.save({
-      nombre: 'El Retiro',
-      valor: 30,
-      descripcion: 'Zona El Retiro',
-    });
+    const zonaDefault = zonas[0];
 
-    const zonaElPuerto = await this.zonasRepository.save({
-      nombre: 'El Puerto',
-      valor: 40,
-      descripcion: 'Zona El Puerto - San Miguel',
-    });
-
-    const zonaLosHuarpes = await this.zonasRepository.save({
-      nombre: 'Los Huarpes',
-      valor: 70,
-      descripcion: 'Zona Los Huarpes',
-    });
-
-    console.log('✅ Zonas creadas');
-
-    // Crear usuarios
+    // Usuarios según init-database.sql
     const passwordHash = await bcrypt.hash('admin123', 10);
 
-    // Administrativo (NO tiene padrón)
     await this.usuariosRepository.save({
       nombre: 'Admin Sistema',
       direccion: 'Oficina Central',
@@ -68,11 +81,10 @@ export class SeedService implements OnModuleInit {
       padron: null,
       rol: RolUsuario.ADMINISTRATIVO,
       password: passwordHash,
-      zona: zonaGustavoAndre,
+      zona: zonaDefault,
       tipo: TipoUsuario.PARTICULARES,
     });
 
-    // Operario (NO tiene padrón)
     await this.usuariosRepository.save({
       nombre: 'Juan Pérez',
       direccion: 'Calle Principal 123',
@@ -80,68 +92,15 @@ export class SeedService implements OnModuleInit {
       padron: null,
       rol: RolUsuario.OPERARIO,
       password: passwordHash,
-      zona: zonaGustavoAndre,
+      zona: zonaDefault,
       tipo: TipoUsuario.PARTICULARES,
     });
 
-    // Clientes (SÍ tienen padrón - formato correcto: ZONA-ID)
-    await this.usuariosRepository.save({
-      nombre: 'María González',
-      direccion: 'Av. San Martín 456',
-      email: 'maria@example.com',
-      padron: '10-0001',
-      rol: RolUsuario.CLIENTE,
-      zona: zonaGustavoAndre,
-      tipo: TipoUsuario.PARTICULARES,
-      whatsapp: '2613456789',
-      telefono: '2613456789',
-    });
+    console.log('✅ Zonas y usuarios base creados');
 
-    await this.usuariosRepository.save({
-      nombre: 'Pedro Rodríguez',
-      direccion: 'Calle Belgrano 789',
-      email: 'pedro@example.com',
-      padron: '10-0002',
-      rol: RolUsuario.CLIENTE,
-      zona: zonaGustavoAndre,
-      tipo: TipoUsuario.PARTICULARES,
-      whatsapp: '2613456790',
-      telefono: '2613456790',
-    });
-
-    await this.usuariosRepository.save({
-      nombre: 'Municipalidad El Retiro',
-      direccion: 'Calle Mitre 321',
-      email: 'ana@example.com',
-      padron: '30-0001',
-      rol: RolUsuario.CLIENTE,
-      zona: zonaElRetiro,
-      tipo: TipoUsuario.ENTIDAD_PUBLICA,
-      whatsapp: '2613456791',
-      telefono: '2613456791',
-    });
-
-    console.log('✅ Usuarios de prueba creados');
-    console.log('');
-    console.log('👤 Credenciales de acceso:');
-    console.log('');
-    console.log('   CLIENTES (acceso por padrón):');
-    console.log('   - Padrón: 10-0001 (María González)');
-    console.log('   - Padrón: 10-0002 (Pedro Rodríguez)');
-    console.log('   - Padrón: 30-0001 (Ana López)');
-    console.log('');
-    console.log('   ADMINISTRATIVO (sin padrón):');
-    console.log('   - Email: admin@aguagandre.com');
-    console.log('   - Contraseña: admin123');
-    console.log('');
-    console.log('   OPERARIO (sin padrón):');
-    console.log('   - Email: operario@aguagandre.com');
-    console.log('   - Contraseña: admin123');
-    console.log('');
-
-    // Seed del tarifario
+    // Seed del tarifario (se mantiene)
     await this.tarifarioSeedService.seedTarifario();
-    console.log('');
+    console.log('✅ Tarifario inicial creado');
   }
 }
 
