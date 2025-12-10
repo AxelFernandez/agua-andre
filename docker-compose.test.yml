@@ -69,7 +69,8 @@ services:
       - /app/node_modules
     networks:
       - agua_network_test
-    command: npm start
+    # Forzamos bind en 0.0.0.0 para que el host pueda acceder al dev server
+    command: ["npm", "start", "--", "--host", "0.0.0.0"]
 
 volumes:
   postgres_data_test:
