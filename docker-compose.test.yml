@@ -66,13 +66,13 @@ services:
       - REACT_APP_API_URL=${REACT_APP_API_URL:-https://api-test.asocaguapzoga.com.ar}
       - DANGEROUSLY_DISABLE_HOST_CHECK=${DANGEROUSLY_DISABLE_HOST_CHECK:-true}
       - CHOKIDAR_USEPOLLING=${CHOKIDAR_USEPOLLING:-true}
-      - FAST_REFRESH=${FAST_REFRESH:-false}
+      - FAST_REFRESH=false
       - FRONTEND_HOST=${FRONTEND_HOST:-0.0.0.0}
       - FRONTEND_PORT=${FRONTEND_PORT:-3000}
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    command: sh -c "HOST=$${FRONTEND_HOST} PORT=$${FRONTEND_PORT} FAST_REFRESH=false npm start"
+    command: sh -c "REACT_APP_API_URL=$${REACT_APP_API_URL} HOST=$${FRONTEND_HOST} PORT=$${FRONTEND_PORT} FAST_REFRESH=false INLINE_RUNTIME_CHUNK=false npm start -- --no-hot"
     networks:
       - agua_network_test
 
