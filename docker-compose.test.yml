@@ -64,18 +64,15 @@ services:
       - "127.0.0.1:8081:3000"
     environment:
       - REACT_APP_API_URL=${REACT_APP_API_URL:-https://api-test.asocaguapzoga.com.ar}
-      - WDS_SOCKET_HOST=${WDS_SOCKET_HOST:-test.asocaguapzoga.com.ar}
-      - WDS_SOCKET_PORT=${WDS_SOCKET_PORT:-443}
-      - WDS_SOCKET_PROTOCOL=${WDS_SOCKET_PROTOCOL:-wss}
-      - WDS_SOCKET_PATH=${WDS_SOCKET_PATH:-/ws}
       - DANGEROUSLY_DISABLE_HOST_CHECK=${DANGEROUSLY_DISABLE_HOST_CHECK:-true}
       - CHOKIDAR_USEPOLLING=${CHOKIDAR_USEPOLLING:-true}
+      - FAST_REFRESH=${FAST_REFRESH:-false}
       - FRONTEND_HOST=${FRONTEND_HOST:-0.0.0.0}
       - FRONTEND_PORT=${FRONTEND_PORT:-3000}
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    command: sh -c "HOST=$${FRONTEND_HOST} PORT=$${FRONTEND_PORT} WDS_SOCKET_PROTOCOL=wss npm start"
+    command: sh -c "HOST=$${FRONTEND_HOST} PORT=$${FRONTEND_PORT} FAST_REFRESH=false npm start"
     networks:
       - agua_network_test
 
