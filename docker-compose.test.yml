@@ -30,7 +30,7 @@ services:
     env_file:
       - .env.test
     ports:
-      - "127.0.0.1:3002:3002"
+      - "127.0.0.1:3002:3001"
     environment:
       NODE_ENV: development
       DATABASE_HOST: postgres-test
@@ -39,7 +39,7 @@ services:
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       DATABASE_NAME: ${DATABASE_NAME:-agua_potable_test}
       JWT_SECRET: ${JWT_SECRET}
-      PORT: 3002
+      PORT: 3001
       CORS_ORIGIN: ${CORS_ORIGIN:-https://test.asocaguapzoga.com.ar}
     volumes:
       - ./backend:/app
