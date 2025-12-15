@@ -62,13 +62,16 @@ services:
       - "127.0.0.1:8081:3000"
     environment:
       REACT_APP_API_URL: ${REACT_APP_API_URL:-https://api-test.asocaguapzoga.com.ar}
+      HOST: 0.0.0.0
+      WDS_SOCKET_HOST: test.asocaguapzoga.com.ar
+      WDS_SOCKET_PORT: 443
+      DANGEROUSLY_DISABLE_HOST_CHECK: true
     volumes:
       - ./frontend:/app
       - /app/node_modules
     networks:
       - agua_network_test
-    # Forzamos bind en 0.0.0.0 para que el host pueda acceder al dev server
-    command: ["npm", "start", "--", "--host", "0.0.0.0"]
+    command: npm start
 
 volumes:
   postgres_data_test:
