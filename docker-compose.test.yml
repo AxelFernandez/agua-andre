@@ -5,10 +5,12 @@ services:
     image: postgres:15-alpine
     container_name: agua_db_test
     restart: always
+    env_file:
+      - .env.test
     environment:
-      POSTGRES_DB: agua_potable_test
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Password!00.
+      POSTGRES_DB: ${DATABASE_NAME:-agua_potable_test}
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
       - postgres_data_test:/var/lib/postgresql/data
     networks:
@@ -61,17 +63,19 @@ services:
     ports:
       - "127.0.0.1:8081:3000"
     environment:
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-https://api-test.asocaguapzoga.com.ar}
-      HOST: 0.0.0.0
-      WDS_SOCKET_HOST: test.asocaguapzoga.com.ar
-      WDS_SOCKET_PORT: 443
-      DANGEROUSLY_DISABLE_HOST_CHECK: true
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-https://api-test.asocaguapzoga.com.ar}
+      - WDS_SOCKET_HOST=${WDS_SOCKET_HOST:-test.asocaguapzoga.com.ar}
+      - WDS_SOCKET_PORT=${WDS_SOCKET_PORT:-443}
+      - DANGEROUSLY_DISABLE_HOST_CHECK=${DANGEROUSLY_DISABLE_HOST_CHECK:-true}
+      - CHOKIDAR_USEPOLLING=${CHOKIDAR_USEPOLLING:-true}
+      - FRONTEND_HOST=${FRONTEND_HOST:-0.0.0.0}
+      - FRONTEND_PORT=${FRONTEND_PORT:-3000}
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    command: sh -c "HOST=$${FRONTEND_HOST} PORT=$${FRONTEND_PORT} npm start"
     networks:
       - agua_network_test
-    command: npm start
 
 volumes:
   postgres_data_test:
