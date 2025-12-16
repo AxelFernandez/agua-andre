@@ -65,17 +65,12 @@ services:
     environment:
       - REACT_APP_API_URL=${REACT_APP_API_URL:-https://api-test.asocaguapzoga.com.ar}
       - DANGEROUSLY_DISABLE_HOST_CHECK=${DANGEROUSLY_DISABLE_HOST_CHECK:-true}
-      - CHOKIDAR_USEPOLLING=${CHOKIDAR_USEPOLLING:-true}
-      - FAST_REFRESH=false
       - FRONTEND_HOST=${FRONTEND_HOST:-0.0.0.0}
       - FRONTEND_PORT=${FRONTEND_PORT:-3000}
-      - WDS_SOCKET_PROTOCOL=wss
-      - WDS_SOCKET_HOST=test.asocaguapzoga.com.ar
-      - WDS_SOCKET_PORT=443
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    command: sh -c "REACT_APP_API_URL=$${REACT_APP_API_URL} HOST=$${FRONTEND_HOST} PORT=$${FRONTEND_PORT} FAST_REFRESH=false INLINE_RUNTIME_CHUNK=false npm start -- --no-hot"
+    command: sh -c "npm run build && npx --yes serve -s build -l 3000"
     networks:
       - agua_network_test
 
